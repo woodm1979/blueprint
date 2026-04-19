@@ -2,7 +2,7 @@
 
 > PRD: ./2026-04-19-brainstorm-grill-me-revamp-PRD.md
 > Executor: /build
-> Created: 2026-04-19  |  Last touched: 2026-04-19 (build started)
+> Created: 2026-04-19  |  Last touched: 2026-04-19
 
 ## Architectural decisions
 
@@ -23,7 +23,7 @@
 
 ## Section 1: Rewrite brainstorm skill as grill-me loop
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 1, 2, 3
 
@@ -33,13 +33,13 @@ Rewrite `skills/brainstorm/SKILL.md` to replace the mandatory codebase recon ste
 
 ### Acceptance criteria
 
-- [ ] The skill contains no mandatory codebase recon step — there is no instruction to dispatch an Explore subagent before asking the user anything.
-- [ ] The skill instructs Claude to ask one question at a time, provide its recommended answer, and include tradeoffs for non-obvious decisions.
-- [ ] The skill instructs Claude to explore code (targeted: single file or grep) only when a specific question requires it.
-- [ ] The skill defines a termination condition: stop when shared understanding is reached or no decision branches remain unresolved.
-- [ ] The `AskUserQuestion` rule is described as advisory ("use when helpful") rather than mandatory for every discrete choice.
-- [ ] The decision summary and artifact gate (Steps 3–4 in the original) are preserved unchanged.
-- [ ] Red flags section is updated to remove references to the old mandatory recon and fixed sequence.
+- [x] The skill contains no mandatory codebase recon step — there is no instruction to dispatch an Explore subagent before asking the user anything.
+- [x] The skill instructs Claude to ask one question at a time, provide its recommended answer, and include tradeoffs for non-obvious decisions.
+- [x] The skill instructs Claude to explore code (targeted: single file or grep) only when a specific question requires it.
+- [x] The skill defines a termination condition: stop when shared understanding is reached or no decision branches remain unresolved.
+- [x] The `AskUserQuestion` rule is described as advisory ("use when helpful") rather than mandatory for every discrete choice.
+- [x] The decision summary and artifact gate (Steps 3–4 in the original) are preserved unchanged.
+- [x] Red flags section is updated to remove references to the old mandatory recon and fixed sequence.
 
 ### Notes for executor
 
@@ -50,10 +50,9 @@ Rewrite `skills/brainstorm/SKILL.md` to replace the mandatory codebase recon ste
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 78e6a9a
+- Tests added: none (prose-only skill file)
+- Deviations from plan: Steps 3–4 renumbered to 2–3 (natural consequence of removing old Steps 1–2; content preserved verbatim). Quality reviewer noted suggestions: "decision tree" vs "design tree" inconsistency; removal of "don't propose design in turn 1" guardrail; "pad" colloquialism; compressed `targeted` phrasing — all SUGGESTION-level, none BLOCKING.
 
 ---
 
