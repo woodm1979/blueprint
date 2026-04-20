@@ -2,7 +2,7 @@
 
 > PRD: ./2026-04-19-brainstorm-grill-me-revamp-PRD.md
 > Executor: /build
-> Created: 2026-04-19  |  Last touched: 2026-04-19
+> Created: 2026-04-19  |  Last touched: 2026-04-19 (all sections complete)
 
 ## Architectural decisions
 
@@ -90,7 +90,7 @@ Update Step 1 of `skills/blueprint/SKILL.md` to detect which standard PRD sectio
 
 ## Section 3: Auto-invoke /blueprint from brainstorm artifact gate
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 5, 6, 7
 
@@ -100,10 +100,10 @@ Edit `skills/brainstorm/SKILL.md` to replace the "REQUIRED NEXT SKILL" prose mes
 
 ### Acceptance criteria
 
-- [ ] When the user picks "Write new PRD + PLAN" or "Extend existing PRD + PLAN", the skill instructs Claude to call the `Skill` tool with `skill: "blueprint:blueprint"` rather than printing a "REQUIRED NEXT SKILL" message.
-- [ ] When the user picks "No files — end here", the session ends cleanly with no skill invocation.
-- [ ] When the user picks "Let's discuss", the conversation continues inline and the artifact gate question is re-asked — no skill is invoked until a final choice is made.
-- [ ] The "REQUIRED NEXT SKILL: Invoke /blueprint" prose is removed from the skill file.
+- [x] When the user picks "Write new PRD + PLAN" or "Extend existing PRD + PLAN", the skill instructs Claude to call the `Skill` tool with `skill: "blueprint:blueprint"` rather than printing a "REQUIRED NEXT SKILL" message.
+- [x] When the user picks "No files — end here", the session ends cleanly with no skill invocation.
+- [x] When the user picks "Let's discuss", the conversation continues inline and the artifact gate question is re-asked — no skill is invoked until a final choice is made.
+- [x] The "REQUIRED NEXT SKILL: Invoke /blueprint" prose is removed from the skill file.
 
 ### Notes for executor
 
@@ -113,7 +113,6 @@ Edit `skills/brainstorm/SKILL.md` to replace the "REQUIRED NEXT SKILL" prose mes
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 56c5ffa
+- Tests added: none (prose-only skill file)
+- Deviations from plan: none
