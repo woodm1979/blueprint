@@ -2,7 +2,7 @@
 
 > PRD: ./2026-04-21-build-post-completion-PRD.md
 > Executor: /build
-> Created: 2026-04-21  |  Last touched: 2026-04-21 (Section 1 complete)
+> Created: 2026-04-21  |  Last touched: 2026-04-21 (Section 2 complete)
 
 ## Architectural decisions
 
@@ -54,7 +54,7 @@ Add **Step 6a** to `skills/build/SKILL.md`, inserted between the existing Step 6
 
 ## Section 2: Future considerations generation and handoff
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 4, 5
 
@@ -64,9 +64,9 @@ Add **Step 6b** to `skills/build/SKILL.md`, inserted after Step 6a (or after Ste
 
 ### Acceptance criteria
 
-- [ ] After all sections are complete (and after the optional Step 6a), `/build` generates a `## Future Considerations` section and appends it to the PRD file.
-- [ ] The PRD update is committed with the message `docs: add future considerations to PRD`.
-- [ ] The handoff message printed is exactly: `Future considerations written to <PRD path>. Run /brainstorm and review the **Future Considerations** section to evaluate next steps.`
+- [x] After all sections are complete (and after the optional Step 6a), `/build` generates a `## Future Considerations` section and appends it to the PRD file.
+- [x] The PRD update is committed with the message `docs: add future considerations to PRD`.
+- [x] The handoff message printed is exactly: `Future considerations written to <PRD path>. Run /brainstorm and review the **Future Considerations** section to evaluate next steps.`
 
 ### Notes for executor
 
@@ -78,7 +78,6 @@ Add **Step 6b** to `skills/build/SKILL.md`, inserted after Step 6a (or after Ste
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 152430e
+- Tests added: 0 (skill file edit — no executable tests)
+- Deviations from plan: none
