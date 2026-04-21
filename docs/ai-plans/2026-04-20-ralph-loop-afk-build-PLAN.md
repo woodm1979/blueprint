@@ -60,7 +60,7 @@ Create `skills/build-step/SKILL.md`. This skill contains the full section-execut
 
 ## Section 2: Refactor `/build` to call `/build-step`
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 2
 
@@ -70,12 +70,12 @@ Slim `skills/build/SKILL.md` down to a thin orchestrator loop. Replace the inlin
 
 ### Acceptance criteria
 
-- [ ] `skills/build/SKILL.md` no longer contains the inline section-controller template (the `---IMPLEMENTER PROMPT START---` / Phase 1–6 block)
-- [ ] `/build`'s section dispatch step now reads: dispatch a `sonnet` subagent with prompt "Invoke `blueprint:build-step` to execute the next section. Repo root: `<path>`. PLAN file: `<path>`."
-- [ ] `/build`'s orchestrator loop reads the subagent's `SECTION_COMPLETE` / `ALL_SECTIONS_COMPLETE` / `BLOCKED: <reason>` output and acts accordingly (continue / announce completion / surface blocker)
-- [ ] Running `/build` on a multi-section PLAN still results in all sections completing in order, with PLAN file updates and commits between each
-- [ ] `/build`'s description or overview section mentions `scripts/afk-build.sh` for AFK use
-- [ ] The no-subagent fallback section in `/build` is updated to reference `/build-step` for the sequential implementation step
+- [x] `skills/build/SKILL.md` no longer contains the inline section-controller template (the `---IMPLEMENTER PROMPT START---` / Phase 1–6 block)
+- [x] `/build`'s section dispatch step now reads: dispatch a `sonnet` subagent with prompt "Invoke `blueprint:build-step` to execute the next section. Repo root: `<path>`. PLAN file: `<path>`."
+- [x] `/build`'s orchestrator loop reads the subagent's `SECTION_COMPLETE` / `ALL_SECTIONS_COMPLETE` / `BLOCKED: <reason>` output and acts accordingly (continue / announce completion / surface blocker)
+- [x] Running `/build` on a multi-section PLAN still results in all sections completing in order, with PLAN file updates and commits between each
+- [x] `/build`'s description or overview section mentions `scripts/afk-build.sh` for AFK use
+- [x] The no-subagent fallback section in `/build` is updated to reference `/build-step` for the sequential implementation step
 
 ### Notes for executor
 
@@ -86,10 +86,9 @@ Slim `skills/build/SKILL.md` down to a thin orchestrator loop. Replace the inlin
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 045afe2
+- Tests added: 0
+- Deviations from plan: Orchestrator Step 4 changed from "update PLAN file" to "verify PLAN file was updated by /build-step" — avoids double-update since /build-step already commits the PLAN update
 
 ---
 
