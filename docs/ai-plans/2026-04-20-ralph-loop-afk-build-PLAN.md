@@ -26,7 +26,7 @@
 
 ## Section 1: Implement `/build-step` skill
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 1
 
@@ -36,13 +36,13 @@ Create `skills/build-step/SKILL.md`. This skill contains the full section-execut
 
 ### Acceptance criteria
 
-- [ ] `skills/build-step/SKILL.md` exists with valid skill frontmatter (`name`, `description`)
-- [ ] Invoking `/build-step` on a PLAN with multiple `[ ] not started` sections marks exactly one section `[x] complete`, checks off its acceptance criteria, fills in the completion log, and commits — leaving all other sections untouched
-- [ ] `/build-step` performs PLAN discovery using the same logic as `/build` (user `@`-ref → single candidate → AskUserQuestion for multiple → tell user to run `/blueprint` for none)
-- [ ] `/build-step` dispatches the full section-controller → implementer → spec reviewer → quality reviewer subagent chain with the same model assignments as the current `/build` (section-controller: `sonnet`; reviewers: `opus`)
-- [ ] On success, `/build-step` outputs exactly `SECTION_COMPLETE` as its final line
-- [ ] If no `[ ] not started` sections remain when invoked, `/build-step` outputs exactly `ALL_SECTIONS_COMPLETE` and stops
-- [ ] If the section-controller returns `BLOCKED` or `NEEDS_USER_INPUT`, `/build-step` surfaces the blocker and outputs `BLOCKED: <reason>` as its final line
+- [x] `skills/build-step/SKILL.md` exists with valid skill frontmatter (`name`, `description`)
+- [x] Invoking `/build-step` on a PLAN with multiple `[ ] not started` sections marks exactly one section `[x] complete`, checks off its acceptance criteria, fills in the completion log, and commits — leaving all other sections untouched
+- [x] `/build-step` performs PLAN discovery using the same logic as `/build` (user `@`-ref → single candidate → AskUserQuestion for multiple → tell user to run `/blueprint` for none)
+- [x] `/build-step` dispatches the full section-controller → implementer → spec reviewer → quality reviewer subagent chain with the same model assignments as the current `/build` (section-controller: `sonnet`; reviewers: `opus`)
+- [x] On success, `/build-step` outputs exactly `SECTION_COMPLETE` as its final line
+- [x] If no `[ ] not started` sections remain when invoked, `/build-step` outputs exactly `ALL_SECTIONS_COMPLETE` and stops
+- [x] If the section-controller returns `BLOCKED` or `NEEDS_USER_INPUT`, `/build-step` surfaces the blocker and outputs `BLOCKED: <reason>` as its final line
 
 ### Notes for executor
 
@@ -52,10 +52,9 @@ Create `skills/build-step/SKILL.md`. This skill contains the full section-execut
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 28c8489
+- Tests added: 0
+- Deviations from plan: none
 
 ---
 
