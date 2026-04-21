@@ -123,7 +123,15 @@ Filter the resulting file list to exclude any path ending in `.md`.
 
 ### Step 6b — Future considerations generation and handoff
 
-_Added by Section 2 of this plan._
+After Step 6a (or after Step 6 if Step 6a was skipped), generate a `## Future Considerations` section and append it to the PRD file.
+
+The `## Future Considerations` section should contain bulleted suggestions based on your knowledge of the completed build: follow-up ideas, edge cases worth revisiting, improvements identified but deemed out of scope. Aim for 3–7 items. If you can think of no meaningful suggestions, still append the section with a single bullet: `- No additional items identified at this time.`
+
+Append the section to the PRD file, then commit **only the PRD file** with message `docs: add future considerations to PRD`.
+
+Print exactly:
+
+> Future considerations written to `<PRD path>`. Run /brainstorm and review the **Future Considerations** section to evaluate next steps.
 
 ## No-subagent fallback mode
 
