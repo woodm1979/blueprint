@@ -8,10 +8,7 @@ WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH
 
 trap 'echo "Setup failed, removing worktree..." >&2; git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
 
-# Override script contract: if .claude/worktree-setup.sh exists, run it exclusively.
-# The script receives WORKTREE_DIR and REPO_ROOT as env vars.
-if [[ -f "$REPO_ROOT/.claude/worktree-setup.sh" ]]; then
-  echo "Running override script .claude/worktree-setup.sh..." >&2
+_add_worktree() {
   git worktree prune >&2
   if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
     echo "Branch '$BRANCH' already exists, checking it out..." >&2
@@ -20,24 +17,21 @@ if [[ -f "$REPO_ROOT/.claude/worktree-setup.sh" ]]; then
     echo "Creating new branch '$BRANCH'..." >&2
     git worktree add -b "$BRANCH" "$WORKTREE_DIR" >&2
   fi
+}
+
+# Override script contract: if .claude/worktree-setup.sh exists, run it exclusively.
+# The script receives WORKTREE_DIR and REPO_ROOT as env vars.
+if [[ -f "$REPO_ROOT/.claude/worktree-setup.sh" ]]; then
+  echo "Running override script .claude/worktree-setup.sh..." >&2
+  _add_worktree
   WORKTREE_DIR="$WORKTREE_DIR" REPO_ROOT="$REPO_ROOT" bash "$REPO_ROOT/.claude/worktree-setup.sh" >&2
   echo "Worktree ready: $WORKTREE_DIR" >&2
   echo "$WORKTREE_DIR"
   exit 0
 fi
 
-# Auto-detection path
-git worktree prune >&2
+_add_worktree
 
-if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  echo "Branch '$BRANCH' already exists, checking it out..." >&2
-  git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
-else
-  echo "Creating new branch '$BRANCH'..." >&2
-  git worktree add -b "$BRANCH" "$WORKTREE_DIR" >&2
-fi
-
-# Symlink gitignored .env* files from repo root into worktree root
 for env_file in "$REPO_ROOT"/.env*; do
   [[ -f "$env_file" ]] || continue
   filename=$(basename "$env_file")
@@ -47,7 +41,6 @@ for env_file in "$REPO_ROOT"/.env*; do
   fi
 done
 
-# Symlink untracked .claude/ files into the worktree's .claude/
 if [[ -d "$REPO_ROOT/.claude" ]]; then
   while IFS= read -r rel_path; do
     [[ -z "$rel_path" ]] && continue
@@ -63,7 +56,6 @@ if [[ -d "$REPO_ROOT/.claude" ]]; then
   )
 fi
 
-# Language stack: Elixir/Mix
 if [[ -f "$REPO_ROOT/mix.exs" ]]; then
   if [[ -d "$REPO_ROOT/deps" ]]; then
     echo "Hard-linking deps/..." >&2
@@ -78,7 +70,6 @@ if [[ -f "$REPO_ROOT/mix.exs" ]]; then
   (cd "$WORKTREE_DIR" && mix deps.get >&2)
 fi
 
-# Language stack: Node
 if [[ -f "$REPO_ROOT/package.json" ]]; then
   if [[ -d "$REPO_ROOT/node_modules" ]]; then
     echo "Hard-linking node_modules/..." >&2
@@ -98,7 +89,6 @@ if [[ -f "$REPO_ROOT/package.json" ]]; then
   fi
 fi
 
-# Language stack: Python (uv)
 if [[ -f "$REPO_ROOT/pyproject.toml" ]]; then
   if command -v uv &>/dev/null; then
     (cd "$WORKTREE_DIR" && uv sync >&2)
@@ -109,12 +99,10 @@ elif [[ -f "$REPO_ROOT/requirements.txt" ]]; then
   (cd "$WORKTREE_DIR" && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt >&2)
 fi
 
-# Language stack: Rust
 if [[ -f "$REPO_ROOT/Cargo.toml" ]]; then
   (cd "$WORKTREE_DIR" && cargo fetch >&2)
 fi
 
-# Language stack: Go
 if [[ -f "$REPO_ROOT/go.mod" ]]; then
   (cd "$WORKTREE_DIR" && go mod download >&2)
 fi

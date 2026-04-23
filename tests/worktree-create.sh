@@ -3,12 +3,9 @@
 # Run from repo root: bash tests/worktree-create.sh
 set -euo pipefail
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/worktree-create"
-PASS=0
-FAIL=0
-
-pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT="$REPO_ROOT/scripts/worktree-create"
+. "$REPO_ROOT/tests/helpers.sh"
 
 # Setup: create a temp "repo" to act as our test subject
 setup_repo() {
@@ -162,7 +159,7 @@ EOF
   base="$(basename "$repo")"
   wt="$parent/${base}-worktrees/override-test"
 
-  OVERRIDE_LOG="$override_log" cd "$repo" && OVERRIDE_LOG="$override_log" bash "$SCRIPT" "override-test" >/dev/null 2>&1
+  cd "$repo" && OVERRIDE_LOG="$override_log" bash "$SCRIPT" "override-test" >/dev/null 2>&1
 
   if grep -q "override ran:" "$override_log" 2>/dev/null; then
     pass "override script ran"
@@ -187,9 +184,4 @@ EOF
   cleanup "$repo"
 }
 
-# --- Summary ---
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-if [[ "$FAIL" -gt 0 ]]; then
-  exit 1
-fi
+summarize

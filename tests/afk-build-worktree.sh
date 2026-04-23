@@ -3,12 +3,9 @@
 # Run from repo root: bash tests/afk-build-worktree.sh
 set -euo pipefail
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/afk-build.sh"
-PASS=0
-FAIL=0
-
-pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT="$REPO_ROOT/scripts/afk-build.sh"
+. "$REPO_ROOT/tests/helpers.sh"
 
 script_contains() {
   grep -qF "$1" "$SCRIPT"
@@ -62,6 +59,4 @@ script_matches "grep.*Worktree:" \
   && pass "Worktree: parse uses grep with 'Worktree:' pattern" \
   || fail "Worktree: parse missing grep with 'Worktree:' pattern"
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ $FAIL -eq 0 ]]
+summarize

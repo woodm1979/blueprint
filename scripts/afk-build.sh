@@ -82,6 +82,10 @@ if [ -n "$WORKTREE_PATH" ]; then
   WORK_DIR="$WORKTREE_PATH"
   PLAN_FILENAME="$(basename "$PLAN_FILE")"
   PLAN_FILE="$WORK_DIR/docs/ai-plans/$PLAN_FILENAME"
+  if [[ ! -f "$PLAN_FILE" ]]; then
+    echo "Error: PLAN file not found in worktree: $PLAN_FILE" >&2
+    exit 1
+  fi
   echo "Using worktree: $WORK_DIR"
   echo "Using PLAN file (worktree copy): $PLAN_FILE"
 fi

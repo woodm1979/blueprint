@@ -3,12 +3,9 @@
 # Run from repo root: bash tests/build-worktree-entry.sh
 set -euo pipefail
 
-SKILL="/Users/woodnt/Code/src/github.com/woodm1979/blueprint/skills/build/SKILL.md"
-PASS=0
-FAIL=0
-
-pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SKILL="$REPO_ROOT/skills/build/SKILL.md"
+. "$REPO_ROOT/tests/helpers.sh"
 
 skill_contains() {
   grep -qF "$1" "$SKILL"
@@ -58,6 +55,4 @@ skill_contains 'git worktree list' || skill_contains 'exists' \
   && pass "Step 1 checks worktree existence" \
   || fail "Step 1 missing worktree existence check"
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ $FAIL -eq 0 ]]
+summarize

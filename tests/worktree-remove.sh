@@ -3,12 +3,9 @@
 # Run from repo root: bash tests/worktree-remove.sh
 set -euo pipefail
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/worktree-remove"
-PASS=0
-FAIL=0
-
-pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT="$REPO_ROOT/scripts/worktree-remove"
+. "$REPO_ROOT/tests/helpers.sh"
 
 # Setup: create a temp "repo" with a worktree
 setup_repo_with_worktree() {
@@ -90,7 +87,7 @@ cleanup() {
   nonexistent="$tmp/does-not-exist"
   stderr_out=$(cd "$tmp" && bash "$SCRIPT" "$nonexistent" 2>&1 1>/dev/null)
   exit_code=0
-  cd "$tmp" && bash "$SCRIPT" "$nonexistent" >/dev/null 2>/dev/null || exit_code=$?
+  (cd "$tmp" && bash "$SCRIPT" "$nonexistent" >/dev/null 2>/dev/null) || exit_code=$?
 
   if [[ "$exit_code" -eq 0 ]]; then
     pass "non-existent path: exits 0"
@@ -127,7 +124,7 @@ cleanup() {
 
 # --- Test 5: Hook script is executable ---
 {
-  hook_script="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/hooks/worktree-remove.sh"
+  hook_script="$REPO_ROOT/hooks/worktree-remove.sh"
   if [[ -x "$hook_script" ]]; then
     pass "hooks/worktree-remove.sh is executable"
   else
@@ -137,7 +134,7 @@ cleanup() {
 
 # --- Test 6: hooks/hooks.json references WorktreeRemove ---
 {
-  hooks_json="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/hooks/hooks.json"
+  hooks_json="$REPO_ROOT/hooks/hooks.json"
   if grep -q "WorktreeRemove" "$hooks_json" && grep -q "worktree-remove.sh" "$hooks_json"; then
     pass "hooks/hooks.json references WorktreeRemove -> worktree-remove.sh"
   else
@@ -145,9 +142,4 @@ cleanup() {
   fi
 }
 
-# --- Summary ---
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-if [[ "$FAIL" -gt 0 ]]; then
-  exit 1
-fi
+summarize

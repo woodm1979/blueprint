@@ -3,12 +3,9 @@
 # Run from repo root: bash tests/cleanup-worktree-skill.sh
 set -euo pipefail
 
-SKILL="/Users/woodnt/Code/src/github.com/woodm1979/blueprint/skills/cleanup-worktree/SKILL.md"
-PASS=0
-FAIL=0
-
-pass() { echo "PASS: $1"; PASS=$((PASS + 1)); }
-fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SKILL="$REPO_ROOT/skills/cleanup-worktree/SKILL.md"
+. "$REPO_ROOT/tests/helpers.sh"
 
 skill_contains() {
   grep -qF "$1" "$SKILL"
@@ -81,6 +78,4 @@ else
   fail "Sanity checks ordering wrong (check1=$line_check1, check2=$line_check2, check3=$line_check3)"
 fi
 
-echo ""
-echo "Results: $PASS passed, $FAIL failed"
-[[ $FAIL -eq 0 ]]
+summarize
