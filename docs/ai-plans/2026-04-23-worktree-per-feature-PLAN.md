@@ -165,7 +165,7 @@ Extend Step 1 of `skills/build/SKILL.md` to read the `Worktree:` field from the 
 
 ## Section 5: `afk-build.sh` worktree support
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 1, 4
 
@@ -175,10 +175,10 @@ After `afk-build.sh` locates the PLAN file, parse the `Worktree:` line from the 
 
 ### Acceptance criteria
 
-- [ ] Running `afk-build.sh path/to/PLAN.md` for a PLAN with a `Worktree:` field causes docker to be invoked with the worktree directory as the project root, not `.`
-- [ ] Section-state reads (checkbox counting) use the worktree's copy of the PLAN, not the main repo's copy
-- [ ] With a `Worktree:` field pointing to a missing directory, the script exits non-zero with a message telling the user to recreate the worktree
-- [ ] Running `afk-build.sh` against a PLAN with no `Worktree:` field behaves identically to current behavior
+- [x] Running `afk-build.sh path/to/PLAN.md` for a PLAN with a `Worktree:` field causes docker to be invoked with the worktree directory as the project root, not `.`
+- [x] Section-state reads (checkbox counting) use the worktree's copy of the PLAN, not the main repo's copy
+- [x] With a `Worktree:` field pointing to a missing directory, the script exits non-zero with a message telling the user to recreate the worktree
+- [x] Running `afk-build.sh` against a PLAN with no `Worktree:` field behaves identically to current behavior
 
 ### Notes for executor
 
@@ -188,10 +188,9 @@ After `afk-build.sh` locates the PLAN file, parse the `Worktree:` line from the 
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 8277b16
+- Tests added: 8
+- Deviations from plan: none
 
 ---
 
