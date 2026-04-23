@@ -132,7 +132,7 @@ Also update the **PLAN template** in the skill to include `> Worktree: <absolute
 
 ## Section 4: `/build` worktree entry
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 1, 3
 
@@ -142,11 +142,11 @@ Extend Step 1 of `skills/build/SKILL.md` to read the `Worktree:` field from the 
 
 ### Acceptance criteria
 
-- [ ] Running `/build` against a PLAN with a valid `Worktree:` path causes all git commits during the session to land on the feature branch, not on the branch of the invoking window
-- [ ] `git branch` checked inside the build session shows the feature branch
-- [ ] When the worktree directory is missing, `EnterWorktree name: <branch>` is called and the build resumes in the recreated worktree
-- [ ] Running `/build` against a PLAN with no `Worktree:` field completes without error and operates in the main repo (backwards-compatible)
-- [ ] Two simultaneous `/build` runs on different PLANs (each with their own `Worktree:`) make commits on separate branches with no cross-contamination
+- [x] Running `/build` against a PLAN with a valid `Worktree:` path causes all git commits during the session to land on the feature branch, not on the branch of the invoking window
+- [x] `git branch` checked inside the build session shows the feature branch
+- [x] When the worktree directory is missing, `EnterWorktree name: <branch>` is called and the build resumes in the recreated worktree
+- [x] Running `/build` against a PLAN with no `Worktree:` field completes without error and operates in the main repo (backwards-compatible)
+- [x] Two simultaneous `/build` runs on different PLANs (each with their own `Worktree:`) make commits on separate branches with no cross-contamination
 
 ### Notes for executor
 
@@ -157,10 +157,9 @@ Extend Step 1 of `skills/build/SKILL.md` to read the `Worktree:` field from the 
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 3ae16b2
+- Tests added: 8
+- Deviations from plan: none
 
 ---
 
