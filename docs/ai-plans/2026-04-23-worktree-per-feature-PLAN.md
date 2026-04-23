@@ -93,7 +93,7 @@ Ship `hooks/worktree-remove.sh` and `scripts/worktree-remove` in the plugin. The
 
 ## Section 3: `/blueprint` worktree embedding (Step 6.5 + Step 8.5)
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 2
 
@@ -109,12 +109,12 @@ Also update the **PLAN template** in the skill to include `> Worktree: <absolute
 
 ### Acceptance criteria
 
-- [ ] After `/blueprint` completes, the committed PLAN header contains `Worktree: <abs-path>` pointing to the correct directory
-- [ ] The worktree directory exists at `<parent>/<repo>-worktrees/<slug>` and `git worktree list` shows it on the feature branch
-- [ ] A slug containing `/` (e.g. `feature/auth`) is sanitized to `feature-auth` in the branch and path
-- [ ] If the branch `my-feature` already exists, the new worktree uses branch `my-feature-2` (and path `…-worktrees/my-feature-2`)
-- [ ] If a worktree directory already exists at the computed path, the user is prompted to choose: reuse, delete+recreate, or abort — and the chosen action is executed correctly
-- [ ] The Step 10 handoff message shows the worktree path on its own line before the `/build` command
+- [x] After `/blueprint` completes, the committed PLAN header contains `Worktree: <abs-path>` pointing to the correct directory
+- [x] The worktree directory exists at `<parent>/<repo>-worktrees/<slug>` and `git worktree list` shows it on the feature branch
+- [x] A slug containing `/` (e.g. `feature/auth`) is sanitized to `feature-auth` in the branch and path
+- [x] If the branch `my-feature` already exists, the new worktree uses branch `my-feature-2` (and path `…-worktrees/my-feature-2`)
+- [x] If a worktree directory already exists at the computed path, the user is prompted to choose: reuse, delete+recreate, or abort — and the chosen action is executed correctly
+- [x] The Step 10 handoff message shows the worktree path on its own line before the `/build` command
 
 ### Notes for executor
 
@@ -124,10 +124,9 @@ Also update the **PLAN template** in the skill to include `> Worktree: <absolute
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 54eee67
+- Tests added: 12
+- Deviations from plan: none
 
 ---
 
