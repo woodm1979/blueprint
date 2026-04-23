@@ -196,7 +196,7 @@ After `afk-build.sh` locates the PLAN file, parse the `Worktree:` line from the 
 
 ## Section 6: `/cleanup-worktree` skill
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 5
 
@@ -212,12 +212,12 @@ On confirmation, trigger `WorktreeRemove` for the worktree path (which fires the
 
 ### Acceptance criteria
 
-- [ ] Running `/cleanup-worktree path/to/PLAN.md` with uncommitted changes in the worktree prints the dirty files and exits without removing the worktree
-- [ ] Running with unpushed commits prints the commit count and exits without removing the worktree
-- [ ] Running with an unmerged branch prints a warning and requires the user to type a confirmation before proceeding
-- [ ] After a successful run, `git worktree list` no longer shows the removed worktree and the directory is gone from disk
-- [ ] Running against a PLAN with no `Worktree:` field exits with a clear error message
-- [ ] Running against a PLAN whose `Worktree:` path does not exist on disk exits cleanly (nothing to remove)
+- [x] Running `/cleanup-worktree path/to/PLAN.md` with uncommitted changes in the worktree prints the dirty files and exits without removing the worktree
+- [x] Running with unpushed commits prints the commit count and exits without removing the worktree
+- [x] Running with an unmerged branch prints a warning and requires the user to type a confirmation before proceeding
+- [x] After a successful run, `git worktree list` no longer shows the removed worktree and the directory is gone from disk
+- [x] Running against a PLAN with no `Worktree:` field exits with a clear error message
+- [x] Running against a PLAN whose `Worktree:` path does not exist on disk exits cleanly (nothing to remove)
 
 ### Notes for executor
 
@@ -227,10 +227,9 @@ On confirmation, trigger `WorktreeRemove` for the worktree path (which fires the
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: dc6a1fb
+- Tests added: 12
+- Deviations from plan: none
 
 ---
 
