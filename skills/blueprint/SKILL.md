@@ -122,6 +122,37 @@ Iterate with the user until the breakdown is approved. If a section feels too bi
 
 Apply the acceptance-criteria coaching note from Step 5 to every section.
 
+### Step 6.5 — Worktree path determination
+
+Determine the feature slug from the PLAN filename: the middle portion between the first `-` group (the ISO date) and `-PLAN.md`. Example: `2026-04-23-auth-flow-PLAN.md` → slug `auth-flow`.
+
+Sanitize the slug: replace every `/` with `-`.
+
+Check whether a branch named `<slug>` already exists (`git branch --list <slug>`). If it does, append `-2`; if `<slug>-2` also exists, try `-3`, and so on until a free name is found. The final name (possibly with counter) is the **worktree name**.
+
+Compute the **worktree path**: `$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/<worktree-name>` (i.e. one level above the repo, in a sibling directory named `<repo>-worktrees`).
+
+Check whether the worktree directory already exists on disk:
+
+- **Does not exist** → proceed.
+- **Exists** → call `AskUserQuestion`:
+  > Question: "A worktree directory already exists at `<worktree-path>`. How should I proceed?"
+  >
+  > Options:
+  > - `Reuse as-is — enter the existing worktree without recreating it`
+  > - `Delete and recreate — remove the directory and create a fresh worktree`
+  > - `Abort — stop here`
+  >
+  > Wait for the user's choice before proceeding. If **Abort**, stop.
+
+Write the following line into the PLAN header block (immediately after the `> Executor: /build` line) **before** the Step 8 commit:
+
+```
+> Worktree: <absolute-path-to-worktree>
+```
+
+This line must be committed in Step 8 so the worktree created in Step 8.5 inherits it.
+
 ### Step 7 — Self-review pass
 
 This is a checklist YOU run yourself — not a subagent dispatch. Scan both files with fresh eyes:
@@ -145,6 +176,12 @@ Commit both files in a single commit.
 
 Do not include attribution trailers.
 
+### Step 8.5 — Create worktree
+
+Call `EnterWorktree name: <worktree-name>` (using the name determined in Step 6.5). This triggers the `WorktreeCreate` hook, which creates the worktree directory, checks out the feature branch, installs dependencies, and symlinks env/config files. Capture the worktree path echoed to stdout by the hook to confirm it matches what was written into the PLAN.
+
+If the user chose **Reuse as-is** in Step 6.5, call `EnterWorktree path: <worktree-path>` instead.
+
 ### Step 9 — Optional GitHub issue
 
 After the commit, call `AskUserQuestion`:
@@ -164,13 +201,15 @@ End with exactly this message (substitute the real file paths):
 
 > **REQUIRED NEXT SKILL:** Run `/build` with the PLAN file below. Each section will run in a fresh subagent with 2-stage review.
 >
+> Worktree: `<absolute-path-to-worktree>`
+>
 > ```
 > /build docs/ai-plans/<date>-<slug>-PLAN.md
 > ```
 >
 > PRD: `docs/ai-plans/<date>-<slug>-PRD.md`
 
-The fenced block is the exact command the user can copy-paste after a `/clear`. The PRD line lets them reference the requirements doc in the new session. Do not invoke `/build` yourself.
+The fenced block is the exact command the user can copy-paste after a `/clear`. The worktree path line tells the user which directory the build will operate in. The PRD line lets them reference the requirements doc in the new session. Do not invoke `/build` yourself.
 
 ## File formats
 
@@ -225,6 +264,7 @@ The fenced block is the exact command the user can copy-paste after a `/clear`. 
 
 > PRD: ./<date>-<slug>-PRD.md
 > Executor: /build
+> Worktree: <absolute-path-to-worktree>
 > Created: <YYYY-MM-DD>  |  Last touched: <YYYY-MM-DD>
 
 ## Architectural decisions
