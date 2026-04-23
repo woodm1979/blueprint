@@ -235,7 +235,7 @@ On confirmation, trigger `WorktreeRemove` for the worktree path (which fires the
 
 ## Section 7: Plugin packaging and migration guide
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 1, 2, 3, 4, 5, 6, 7
 
@@ -250,10 +250,10 @@ Wire everything together as a shippable plugin update:
 
 ### Acceptance criteria
 
-- [ ] `hooks/hooks.json` correctly references `worktree-create.sh` and `worktree-remove.sh` using the plugin-relative path format
-- [ ] Installing the plugin in a fresh environment (no pre-existing hooks) produces a working end-to-end worktree flow without any manual configuration
-- [ ] The README "Worktree isolation" section explains: the path convention, the override script contract, the migration step, and how to run `/cleanup-worktree`
-- [ ] `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` both reflect a bumped version string
+- [x] `hooks/hooks.json` correctly references `worktree-create.sh` and `worktree-remove.sh` using the plugin-relative path format
+- [x] Installing the plugin in a fresh environment (no pre-existing hooks) produces a working end-to-end worktree flow without any manual configuration
+- [x] The README "Worktree isolation" section explains: the path convention, the override script contract, the migration step, and how to run `/cleanup-worktree`
+- [x] `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` both reflect a bumped version string
 
 ### Notes for executor
 
@@ -263,7 +263,6 @@ Wire everything together as a shippable plugin update:
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 3d9979f
+- Tests added: 0
+- Deviations from plan: none
