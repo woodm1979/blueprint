@@ -24,7 +24,7 @@
 
 ## Section 1: WorktreeCreate hook + script
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 2, 6, 7
 
@@ -34,15 +34,15 @@ Ship `hooks/worktree-create.sh` and `scripts/worktree-create` in the plugin. The
 
 ### Acceptance criteria
 
-- [ ] After `EnterWorktree name: test-feature` fires, `git worktree list` shows a new worktree on branch `test-feature` at `<parent>/<repo>-worktrees/test-feature`
-- [ ] For a Node repo: `node_modules/` exists in the new worktree (hard-linked from repo) and the appropriate package manager install has been run
-- [ ] For a Python repo with `uv`: `.venv/` exists in the worktree and packages match `pyproject.toml`
-- [ ] Gitignored `.env*` files in the repo root are symlinked into the worktree root
-- [ ] Untracked `.claude/` files (settings, hooks, etc.) are symlinked into the worktree's `.claude/`
-- [ ] When `.claude/worktree-setup.sh` exists: only that script runs; no auto-detection side effects are present
-- [ ] When the branch already exists (e.g. after auto-recreate): worktree checks it out rather than attempting `git worktree add -b`
-- [ ] Script progress messages go to stderr; only the final worktree path is written to stdout
-- [ ] Hook script is executable and referenced correctly from `hooks/hooks.json`
+- [x] After `EnterWorktree name: test-feature` fires, `git worktree list` shows a new worktree on branch `test-feature` at `<parent>/<repo>-worktrees/test-feature`
+- [x] For a Node repo: `node_modules/` exists in the new worktree (hard-linked from repo) and the appropriate package manager install has been run
+- [x] For a Python repo with `uv`: `.venv/` exists in the worktree and packages match `pyproject.toml`
+- [x] Gitignored `.env*` files in the repo root are symlinked into the worktree root
+- [x] Untracked `.claude/` files (settings, hooks, etc.) are symlinked into the worktree's `.claude/`
+- [x] When `.claude/worktree-setup.sh` exists: only that script runs; no auto-detection side effects are present
+- [x] When the branch already exists (e.g. after auto-recreate): worktree checks it out rather than attempting `git worktree add -b`
+- [x] Script progress messages go to stderr; only the final worktree path is written to stdout
+- [x] Hook script is executable and referenced correctly from `hooks/hooks.json`
 
 ### Notes for executor
 
@@ -54,10 +54,9 @@ Ship `hooks/worktree-create.sh` and `scripts/worktree-create` in the plugin. The
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: a01a481
+- Tests added: 10
+- Deviations from plan: none
 
 ---
 
