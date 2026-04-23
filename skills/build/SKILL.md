@@ -53,6 +53,23 @@ Read the PLAN file end-to-end. Extract:
 
 - The `## Architectural decisions` block (verbatim).
 - Every `## Section N:` block.
+- The `Worktree:` field from the blockquote header (format: `> Worktree: <abs-path>`), if present.
+
+**Worktree entry (if `Worktree:` field is present):**
+
+1. Parse the worktree absolute path from the `> Worktree:` line in the PLAN header.
+2. Check if the worktree path exists in `git worktree list` output.
+3. If the path is in the worktree list:
+   - Call `EnterWorktree path: <abs-path>` to enter the existing worktree.
+4. If the path is NOT in the worktree list (worktree was removed but PLAN still references it):
+   - Derive the branch name from the worktree path by taking the last path component (e.g., `/path/to/blueprint-worktrees/my-feature` → `my-feature`).
+   - Call `EnterWorktree name: <branch>` to auto-recreate the worktree.
+5. After entering the worktree, re-derive the PLAN file path as `<worktree-abs-path>/docs/ai-plans/<plan-filename>`.
+   - Extract the plan filename from the original path (e.g., `2026-04-23-my-feature-PLAN.md`).
+   - Construct the new path: if worktree is at `/path/to/blueprint-worktrees/my-feature`, the PLAN is at `/path/to/blueprint-worktrees/my-feature/docs/ai-plans/2026-04-23-my-feature-PLAN.md`.
+   - Verify the file exists at the new path. If not, report an error and fail.
+
+**If no `Worktree:` field is present:** Skip the worktree entry steps entirely and proceed with the PLAN file as-is (backwards-compatible).
 
 Bump `Last touched:` to today's date in the PLAN header and commit that single-line change with message `build: begin execution`.
 
