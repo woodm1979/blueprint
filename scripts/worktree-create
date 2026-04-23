@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BRANCH="${1:?Usage: worktree-create <branch-name>}"
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH"
+
+trap 'echo "Setup failed, removing worktree..." >&2; git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
+
+# Override script contract: if .claude/worktree-setup.sh exists, run it exclusively.
+# The script receives WORKTREE_DIR and REPO_ROOT as env vars.
+if [[ -f "$REPO_ROOT/.claude/worktree-setup.sh" ]]; then
+  echo "Running override script .claude/worktree-setup.sh..." >&2
+  git worktree prune >&2
+  if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    echo "Branch '$BRANCH' already exists, checking it out..." >&2
+    git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+  else
+    echo "Creating new branch '$BRANCH'..." >&2
+    git worktree add -b "$BRANCH" "$WORKTREE_DIR" >&2
+  fi
+  WORKTREE_DIR="$WORKTREE_DIR" REPO_ROOT="$REPO_ROOT" bash "$REPO_ROOT/.claude/worktree-setup.sh" >&2
+  echo "Worktree ready: $WORKTREE_DIR" >&2
+  echo "$WORKTREE_DIR"
+  exit 0
+fi
+
+# Auto-detection path
+git worktree prune >&2
+
+if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  echo "Branch '$BRANCH' already exists, checking it out..." >&2
+  git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+else
+  echo "Creating new branch '$BRANCH'..." >&2
+  git worktree add -b "$BRANCH" "$WORKTREE_DIR" >&2
+fi
+
+# Symlink gitignored .env* files from repo root into worktree root
+for env_file in "$REPO_ROOT"/.env*; do
+  [[ -f "$env_file" ]] || continue
+  filename=$(basename "$env_file")
+  if git check-ignore -q "$env_file" 2>/dev/null; then
+    ln -sf "$env_file" "$WORKTREE_DIR/$filename"
+    echo "Symlinked $filename" >&2
+  fi
+done
+
+# Symlink untracked .claude/ files into the worktree's .claude/
+if [[ -d "$REPO_ROOT/.claude" ]]; then
+  while IFS= read -r rel_path; do
+    [[ -z "$rel_path" ]] && continue
+    src="$REPO_ROOT/$rel_path"
+    target="$WORKTREE_DIR/$rel_path"
+    mkdir -p "$(dirname "$target")"
+    ln -sf "$src" "$target"
+    echo "Symlinked $rel_path" >&2
+  done < <(
+    comm -23 \
+      <(find "$REPO_ROOT/.claude" -type f | sed "s|$REPO_ROOT/||" | sort) \
+      <(git ls-files .claude/ | sort)
+  )
+fi
+
+# Language stack: Elixir/Mix
+if [[ -f "$REPO_ROOT/mix.exs" ]]; then
+  if [[ -d "$REPO_ROOT/deps" ]]; then
+    echo "Hard-linking deps/..." >&2
+    if cp -Rl "$REPO_ROOT/deps" "$WORKTREE_DIR/deps" 2>/dev/null; then
+      echo "Hard-linked deps/" >&2
+    else
+      echo "Warning: hard-link failed (different filesystem?), falling back to cp -r" >&2
+      cp -r "$REPO_ROOT/deps" "$WORKTREE_DIR/deps"
+    fi
+  fi
+  echo "Running mix deps.get..." >&2
+  (cd "$WORKTREE_DIR" && mix deps.get >&2)
+fi
+
+# Language stack: Node
+if [[ -f "$REPO_ROOT/package.json" ]]; then
+  if [[ -d "$REPO_ROOT/node_modules" ]]; then
+    echo "Hard-linking node_modules/..." >&2
+    if cp -Rl "$REPO_ROOT/node_modules" "$WORKTREE_DIR/node_modules" 2>/dev/null; then
+      echo "Hard-linked node_modules/" >&2
+    else
+      echo "Warning: hard-link failed (different filesystem?), falling back to cp -r" >&2
+      cp -r "$REPO_ROOT/node_modules" "$WORKTREE_DIR/node_modules"
+    fi
+  fi
+  if [[ -f "$REPO_ROOT/pnpm-lock.yaml" ]]; then
+    (cd "$WORKTREE_DIR" && pnpm install >&2)
+  elif [[ -f "$REPO_ROOT/yarn.lock" ]]; then
+    (cd "$WORKTREE_DIR" && yarn install >&2)
+  else
+    (cd "$WORKTREE_DIR" && npm install >&2)
+  fi
+fi
+
+# Language stack: Python (uv)
+if [[ -f "$REPO_ROOT/pyproject.toml" ]]; then
+  if command -v uv &>/dev/null; then
+    (cd "$WORKTREE_DIR" && uv sync >&2)
+  else
+    echo "Warning: pyproject.toml found but uv not installed — skipping Python deps" >&2
+  fi
+elif [[ -f "$REPO_ROOT/requirements.txt" ]]; then
+  (cd "$WORKTREE_DIR" && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt >&2)
+fi
+
+# Language stack: Rust
+if [[ -f "$REPO_ROOT/Cargo.toml" ]]; then
+  (cd "$WORKTREE_DIR" && cargo fetch >&2)
+fi
+
+# Language stack: Go
+if [[ -f "$REPO_ROOT/go.mod" ]]; then
+  (cd "$WORKTREE_DIR" && go mod download >&2)
+fi
+
+echo "Worktree ready: $WORKTREE_DIR" >&2
+echo "$WORKTREE_DIR"
