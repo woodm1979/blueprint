@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WORKTREE_PATH="${1:?Usage: worktree-remove <worktree-path>}"
+
+if [[ ! -d "$WORKTREE_PATH" ]]; then
+  echo "Worktree path not found — nothing to remove." >&2
+  exit 0
+fi
+
+BRANCH=$(git -C "$WORKTREE_PATH" symbolic-ref --short HEAD 2>/dev/null || echo "detached HEAD")
+REPO_ROOT=$(dirname "$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir)")
+
+echo "$BRANCH"
+
+git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_PATH" >&2
+git -C "$REPO_ROOT" worktree prune >&2
+
+echo "Removed worktree at '$WORKTREE_PATH'." >&2

@@ -9,6 +9,16 @@
           }
         ]
       }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "hooks/worktree-remove.sh"
+          }
+        ]
+      }
     ]
   }
 }
