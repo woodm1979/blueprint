@@ -2,7 +2,7 @@
 
 > PRD: ./2026-04-28-brainstorm-escape-hatch-ux-PRD.md
 > Executor: /build
-> Created: 2026-04-28  |  Last touched: 2026-04-28
+> Created: 2026-04-28  |  Last touched: 2026-04-28 (Section 1 complete)
 
 ## Architectural decisions
 
@@ -21,7 +21,7 @@
 
 ## Section 1: Fix "Let's discuss" post-selection behavior
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 1
 
@@ -31,10 +31,10 @@ After any "Let's discuss" selection — whether during a Step 1 interview questi
 
 ### Acceptance criteria
 
-- [ ] UX rules section contains an explicit rule stating that when "Let's discuss" is selected, Claude responds with "What's on your mind?" and waits before calling `AskUserQuestion` again.
-- [ ] Step 1 instructions include the post-"Let's discuss" behavior (ask open question, wait).
-- [ ] Step 3 artifact gate instructions replace the vague "discuss inline" wording with the same explicit behavior.
-- [ ] Red flags list includes: "About to call `AskUserQuestion` immediately after a 'Let's discuss' selection without first asking an open question → stop."
+- [x] UX rules section contains an explicit rule stating that when "Let's discuss" is selected, Claude responds with "What's on your mind?" and waits before calling `AskUserQuestion` again.
+- [x] Step 1 instructions include the post-"Let's discuss" behavior (ask open question, wait).
+- [x] Step 3 artifact gate instructions replace the vague "discuss inline" wording with the same explicit behavior.
+- [x] Red flags list includes: "About to call `AskUserQuestion` immediately after a 'Let's discuss' selection without first asking an open question → stop."
 
 ### Notes for executor
 
@@ -44,10 +44,9 @@ After any "Let's discuss" selection — whether during a Step 1 interview questi
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 06697aa3c47ffeb9f4fd287e8936bbec14fe045d
+- Tests added: 0 (prose-only skill file)
+- Deviations from plan: Also fixed plan-mode compatibility section and artifact gate option description for consistency; rule numbering updated (old 4→5, old 5→6).
 
 ---
 
