@@ -1,7 +1,7 @@
 {
   "name": "blueprint",
   "description": "Planning and execution suite for Claude Code: brainstorm, blueprint, build, and TDD",
-  "version": "6.4.0",
+  "version": "6.5.0",
   "author": {
     "name": "woodm1979",
     "email": "matt@lyvi.com"
