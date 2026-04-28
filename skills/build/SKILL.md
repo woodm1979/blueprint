@@ -105,6 +105,31 @@ Read the final line of the subagent's response for one of:
 
 `/build-step` updates the PLAN file and commits as part of its own Step 4. Verify the section's `**Status:**` is now `[x] complete` in the PLAN file. If it is not (indicating `/build-step` failed to update), surface the discrepancy to the user and stop.
 
+### Step 4.5 — Context check
+
+Before looping, check current context window usage.
+
+If context is **above 45%**:
+
+1. Do NOT proceed to Step 5.
+2. Output exactly (substitute real paths):
+
+   > **Context window above 45% — pausing before the next section.**
+   >
+   > Run `/clear`, then resume with:
+   >
+   > ```
+   > /build <path-to-PLAN.md>
+   > ```
+   >
+   > `/build` resumes automatically from the next `[ ] not started` section.
+   >
+   > PRD: `<path-to-PRD.md>`
+
+3. Stop. Do not loop.
+
+If context is **45% or below**: proceed to Step 5 without comment.
+
 ### Step 5 — Continue automatically
 
 Go back to Step 2 and select the next `[ ] not started` section.
