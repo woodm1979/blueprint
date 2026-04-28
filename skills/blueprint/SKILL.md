@@ -111,47 +111,41 @@ Iterate with the user until the breakdown is approved. If a section feels too bi
 
 ### Step 6 — Write / update PLAN
 
+**Before writing (new and extension both):** Determine the worktree path.
+
+1. Derive the slug: the middle portion of the PLAN filename between the ISO date and `-PLAN.md`. Example: `2026-04-23-auth-flow-PLAN.md` → `auth-flow`. Sanitize: replace every `/` with `-`.
+2. Check whether a branch named `<slug>` already exists (`git branch --list <slug>`). If it does, append `-2`, `-3`, … until a free name is found. This is the **worktree name**.
+3. Compute the **worktree path**: `$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/<worktree-name>`.
+4. Call `AskUserQuestion`:
+   > Question: "I'll create a worktree for this feature at `<worktree-path>` (branch `<worktree-name>`). How should I proceed?"
+   >
+   > Options:
+   > - `Proceed — create worktree at the path above`
+   > - `Use a different name — I'll provide the branch/directory name`
+   > - `Skip worktree — build in the main repo`
+   >
+   > Wait for the user's choice.
+   - **Proceed** → use the computed path.
+   - **Use a different name** → ask for the new name, re-sanitize, re-check for branch conflicts, recompute path.
+   - **Skip worktree** → omit the `Worktree:` line from the PLAN; skip Step 8.5.
+
+   If the worktree directory already exists on disk, also offer:
+   > - `Reuse as-is — enter the existing worktree without recreating it`
+   > - `Delete and recreate — remove the directory and create a fresh worktree`
+   > - `Abort — stop here`
+   >
+   > If **Abort**, stop.
+
 **New:** Write to `docs/ai-plans/<today's-ISO-date>-<slug>-PLAN.md` using the template in **File formats** below. Include:
 
-- Header with cross-reference to the PRD.
+- Header with cross-reference to the PRD and the confirmed `Worktree:` path (omit if skipped).
 - `## Architectural decisions` section (distilled from conversation context).
 - `## Conventions` section (TDD per section, one commit minimum, 2-stage review, default model `sonnet`).
 - One `## Section N: <Title>` block per approved section, each with `Status: [ ] not started`, `Model:` field, "What to build", acceptance criteria checkboxes, notes for executor, empty completion log.
 
-**Extension:** Append new sections starting from next available section number. Bump `Last touched:` in the PLAN header.
+**Extension:** Append new sections starting from next available section number. Bump `Last touched:` in the PLAN header. Re-run the worktree confirmation above; if the PLAN already has a `Worktree:` line, show that path as the default option.
 
 Apply the acceptance-criteria coaching note from Step 5 to every section.
-
-### Step 6.5 — Worktree path determination
-
-Determine the feature slug from the PLAN filename: the middle portion between the first `-` group (the ISO date) and `-PLAN.md`. Example: `2026-04-23-auth-flow-PLAN.md` → slug `auth-flow`.
-
-Sanitize the slug: replace every `/` with `-`.
-
-Check whether a branch named `<slug>` already exists (`git branch --list <slug>`). If it does, append `-2`; if `<slug>-2` also exists, try `-3`, and so on until a free name is found. The final name (possibly with counter) is the **worktree name**.
-
-Compute the **worktree path**: `$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/<worktree-name>` (i.e. one level above the repo, in a sibling directory named `<repo>-worktrees`).
-
-Check whether the worktree directory already exists on disk:
-
-- **Does not exist** → proceed.
-- **Exists** → call `AskUserQuestion`:
-  > Question: "A worktree directory already exists at `<worktree-path>`. How should I proceed?"
-  >
-  > Options:
-  > - `Reuse as-is — enter the existing worktree without recreating it`
-  > - `Delete and recreate — remove the directory and create a fresh worktree`
-  > - `Abort — stop here`
-  >
-  > Wait for the user's choice before proceeding. If **Abort**, stop.
-
-Write the following line into the PLAN header block (immediately after the `> Executor: /build` line) **before** the Step 8 commit:
-
-```
-> Worktree: <absolute-path-to-worktree>
-```
-
-This line must be committed in Step 8 so the worktree created in Step 8.5 inherits it.
 
 ### Step 7 — Self-review pass
 
@@ -178,9 +172,9 @@ Do not include attribution trailers.
 
 ### Step 8.5 — Create worktree
 
-Call `EnterWorktree name: <worktree-name>` (using the name determined in Step 6.5). This triggers the `WorktreeCreate` hook, which creates the worktree directory, checks out the feature branch, installs dependencies, and symlinks env/config files. Capture the worktree path echoed to stdout by the hook to confirm it matches what was written into the PLAN.
+Call `EnterWorktree name: <worktree-name>` (using the name confirmed in Step 6). This triggers the `WorktreeCreate` hook, which creates the worktree directory, checks out the feature branch, installs dependencies, and symlinks env/config files. Capture the worktree path echoed to stdout by the hook to confirm it matches what was written into the PLAN.
 
-If the user chose **Reuse as-is** in Step 6.5, call `EnterWorktree path: <worktree-path>` instead.
+If the user chose **Reuse as-is** in Step 6, call `EnterWorktree path: <worktree-path>` instead.
 
 If `EnterWorktree` is unavailable in the current harness, warn the user:
 
