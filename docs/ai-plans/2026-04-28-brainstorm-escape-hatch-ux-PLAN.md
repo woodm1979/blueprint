@@ -2,7 +2,7 @@
 
 > PRD: ./2026-04-28-brainstorm-escape-hatch-ux-PRD.md
 > Executor: /build
-> Created: 2026-04-28  |  Last touched: 2026-04-28 (Section 1 complete)
+> Created: 2026-04-28  |  Last touched: 2026-04-28 (Section 2 complete)
 
 ## Architectural decisions
 
@@ -52,7 +52,7 @@ After any "Let's discuss" selection — whether during a Step 1 interview questi
 
 ## Section 2: Add "Skip to planning" and prohibit invented options
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 2, 3
 
@@ -62,11 +62,11 @@ Add "Skip to planning" as a second required escape hatch on every Step 1 `AskUse
 
 ### Acceptance criteria
 
-- [ ] UX rules section contains a rule stating that every Step 1 `AskUserQuestion` call MUST include an option whose `label` is exactly `"Skip to planning"`.
-- [ ] Step 1 instructions define the behavior when "Skip to planning" is selected: proceed immediately to Step 2 (decision summary), then Step 3 (artifact gate).
-- [ ] UX rules section contains a rule prohibiting invented/ad-hoc options not defined in the skill spec.
-- [ ] Red flags list includes: "About to add an option not defined in the skill spec (e.g., 'Chat about this', 'Skip interview and plan immediately') → remove it."
-- [ ] "Skip to planning" does NOT appear as a required option for the Step 3 artifact gate (it has no meaning there).
+- [x] UX rules section contains a rule stating that every Step 1 `AskUserQuestion` call MUST include an option whose `label` is exactly `"Skip to planning"`.
+- [x] Step 1 instructions define the behavior when "Skip to planning" is selected: proceed immediately to Step 2 (decision summary), then Step 3 (artifact gate).
+- [x] UX rules section contains a rule prohibiting invented/ad-hoc options not defined in the skill spec.
+- [x] Red flags list includes: "About to add an option not defined in the skill spec (e.g., 'Chat about this', 'Skip interview and plan immediately') → remove it."
+- [x] "Skip to planning" does NOT appear as a required option for the Step 3 artifact gate (it has no meaning there).
 
 ### Notes for executor
 
@@ -76,7 +76,6 @@ Add "Skip to planning" as a second required escape hatch on every Step 1 `AskUse
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: e203746
+- Tests added: 0 (prose-only skill file)
+- Deviations from plan: Also updated rule cross-reference in Step 1 (rule 5 → rule 7) to stay consistent after renumbering.
