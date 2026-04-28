@@ -36,14 +36,16 @@ These rules apply to EVERY user-facing message during intake. Violating any of t
 2. **Use `AskUserQuestion` when helpful for decisions with 2–4 known discrete options.** It is an advisory tool — not required for every choice. Never hand-roll a numbered list of choices in prose when `AskUserQuestion` would fit better.
 3. **Every `AskUserQuestion` call MUST include an option whose `label` is exactly `"Let's discuss"`.** This is the escape hatch when the primary options don't fit. The label is literal — not "Something else", not "Other", not "None of these". Exactly `"Let's discuss"`.
 4. **When "Let's discuss" is selected, respond with "What's on your mind?" as plain prose and wait for the user to type freely. Do NOT call `AskUserQuestion` again until after the user has responded.**
-5. **Lead with a tradeoff table before any non-obvious decision.** A decision is "non-obvious" if a competent engineer could reasonably pick more than one option. The table precedes the `AskUserQuestion` call and uses the format:
+5. **Every Step 1 `AskUserQuestion` call MUST include an option whose `label` is exactly `"Skip to planning"`.** When selected, proceed immediately to Step 2 (decision summary), then Step 3 (artifact gate), skipping any remaining interview questions. This option applies only during Step 1 — it is not required at the Step 3 artifact gate.
+6. **Never invent options not defined in this skill spec.** Every option label on every `AskUserQuestion` call must come from the spec. Ad-hoc options like "Chat about this" are banned.
+7. **Lead with a tradeoff table before any non-obvious decision.** A decision is "non-obvious" if a competent engineer could reasonably pick more than one option. The table precedes the `AskUserQuestion` call and uses the format:
 
    | Option | Pro | Con | When it fits |
    |---|---|---|---|
 
    Heuristic: **if you can write the table in under a minute, write it.** The only legitimate reason to skip is when one option is clearly dominant (and in that case, just make the decision and move on — don't ask).
 
-6. **Use open prose (not multiple-choice) for problem framing and user stories.** These are exploratory by nature; structure emerges from dialogue.
+8. **Use open prose (not multiple-choice) for problem framing and user stories.** These are exploratory by nature; structure emerges from dialogue.
 
 ### Red flags — STOP and restart the message
 
@@ -51,6 +53,7 @@ These rules apply to EVERY user-facing message during intake. Violating any of t
 - About to send a numbered list of A/B/C options in prose → switch to `AskUserQuestion`.
 - About to send an `AskUserQuestion` call without a `"Let's discuss"` option → add it.
 - About to call `AskUserQuestion` immediately after a "Let's discuss" selection without first asking an open question → stop.
+- About to add an option not defined in the skill spec (e.g., "Chat about this", "Skip interview and plan immediately") → remove it.
 - About to announce a design before asking the user anything → back up.
 
 ## Process
@@ -61,9 +64,10 @@ Interview the user relentlessly about every aspect of the feature or problem unt
 
 **For each question:**
 - Provide your recommended answer with brief reasoning.
-- If the decision is non-obvious, lead with a tradeoff table (per UX rule 5) before asking.
+- If the decision is non-obvious, lead with a tradeoff table (per UX rule 7) before asking.
 - If answering the question requires codebase knowledge, explore the codebase first (targeted: single file or `grep`) — then ask. Do not do a broad upfront recon pass; explore only when a specific question demands it.
 - If the user selects **"Let's discuss"**, respond with "What's on your mind?" as plain prose and wait for their reply before calling `AskUserQuestion` again.
+- If the user selects **"Skip to planning"**, stop the interview immediately and proceed to Step 2 (decision summary), then Step 3 (artifact gate).
 
 **Termination condition:** Stop asking questions when shared understanding is reached — that is, when all significant decision branches on the design tree have been resolved and no unresolved dependencies remain. Do not pad the interview with questions whose answers are already clear from context.
 
