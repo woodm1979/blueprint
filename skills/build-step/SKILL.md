@@ -46,6 +46,8 @@ Construct the section-controller prompt from EXACTLY the template below:
 ```
 You are a section-controller. You will orchestrate the full implementation lifecycle for Section <N>: <Title>. Dispatch an implementer subagent, run spec-compliance and code-quality reviews, handle remediation if needed, and return a structured result to the orchestrator. All workflow detail — diffs, subagent responses — stays in your context, not the orchestrator's.
 
+**CRITICAL: Use the Agent tool directly for every subagent dispatch. Do NOT use Bash, shell scripts, heredocs, or file I/O to construct or pass prompts. Pass the prompt text directly as a string to the Agent tool.**
+
 ## Repo root
 <absolute-path-to-repo-root>
 
