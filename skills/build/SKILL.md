@@ -84,7 +84,7 @@ If no match: announce "All sections complete" and stop.
 Dispatch a **sonnet** subagent with this prompt (fill in the actual repo root and PLAN file path):
 
 ```
-Invoke `blueprint:build-step` to execute the next section.
+Use the Skill tool (skill: "blueprint:build-step") to execute the next section. Invoke it immediately without preamble — do not read files, explore the repo, or do anything else first.
 Repo root: <absolute-path-to-repo-root>
 PLAN file: <absolute-path-to-PLAN.md>
 ```
