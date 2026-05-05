@@ -184,4 +184,24 @@ EOF
   cleanup "$repo"
 }
 
+# --- Test 6: Hook script is executable ---
+{
+  hook_script="$REPO_ROOT/hooks/worktree-create.sh"
+  if [[ -x "$hook_script" ]]; then
+    pass "hooks/worktree-create.sh is executable"
+  else
+    fail "hooks/worktree-create.sh is executable (not found or not executable)"
+  fi
+}
+
+# --- Test 7: hooks/hooks.json references WorktreeCreate ---
+{
+  hooks_json="$REPO_ROOT/hooks/hooks.json"
+  if grep -q "WorktreeCreate" "$hooks_json" && grep -q "worktree-create.sh" "$hooks_json"; then
+    pass "hooks/hooks.json references WorktreeCreate -> worktree-create.sh"
+  else
+    fail "hooks/hooks.json references WorktreeCreate -> worktree-create.sh"
+  fi
+}
+
 summarize
