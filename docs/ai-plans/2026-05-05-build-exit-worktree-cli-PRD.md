@@ -53,3 +53,12 @@ Three targeted additions that close the remaining lifecycle gaps:
 ## Open questions
 
 - [ ] Does `ExitWorktree` need to be called conditionally only if `EnterWorktree` was called earlier, or is it safe to call unconditionally (no-op if not in a worktree)?
+
+## Future Considerations
+
+- **`worktree-remove-cli` force-delete option**: Currently uses `git branch -d` (safe delete), which refuses to delete an unmerged branch. A `-f` / `--force` flag could be added for cases where the developer deliberately wants to discard unmerged work. Deferred because safe-delete is the right default.
+- **Branch-push before removal**: A common workflow step is to push the feature branch before removing the worktree (so the branch isn't lost on cleanup). `worktree-remove-cli` could optionally run `git push -u origin <branch>` before removing the worktree. This was out of scope but would round out the handoff flow.
+- **`/build` ExitWorktree signal to user**: The current Step 6c exits the worktree but the printed message is the same handoff line as before. A clearer "Exiting worktree — returning to main repo" line before the handoff message would make the context switch explicit for users who may be confused about where they are.
+- **Automated test for ExitWorktree timing**: The current `tests/build-worktree-entry.sh` checks that `ExitWorktree` is present in the skill text, but does not verify it appears *after* Step 6b and *before* the handoff print. A positional grep (e.g., checking line order) would prevent regressions where the call moves to the wrong step.
+- **`worktree-remove-cli` tab-completion**: The script could be registered as a git alias or have a shell completion stub so developers can tab-complete branch names. Currently requires the user to know the exact branch name.
+- **hooks.json linting in CI**: The `WorktreeCreate`/`WorktreeRemove` hooks.json smoke tests are currently only run manually. Adding them to a lightweight CI check (e.g., a GitHub Actions step) would catch hook-wiring regressions before they reach users.
