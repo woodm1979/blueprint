@@ -7,44 +7,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$REPO_ROOT/scripts/worktree-remove-cli"
 . "$REPO_ROOT/tests/helpers.sh"
 
-# Setup: create a temp repo with a sibling worktree
-setup_repo_with_worktree() {
-  local branch="${1:-test-branch}"
-  local dir
-  dir=$(mktemp -d)
-  git -C "$dir" init -q
-  git -C "$dir" config user.email "test@test.com"
-  git -C "$dir" config user.name "Test"
-  touch "$dir/README.md"
-  git -C "$dir" add README.md
-  git -C "$dir" commit -q -m "init"
-
-  local parent base wt_dir
-  parent="$(dirname "$dir")"
-  base="$(basename "$dir")"
-  wt_dir="$parent/${base}-worktrees/$branch"
-  mkdir -p "$parent/${base}-worktrees"
-  git -C "$dir" worktree add -b "$branch" "$wt_dir" >/dev/null 2>&1
-
-  echo "$dir"
-}
-
-cleanup() {
-  local repo_dir="$1"
-  local parent base
-  parent="$(dirname "$repo_dir")"
-  base="$(basename "$repo_dir")"
-  rm -rf "$repo_dir"
-  rm -rf "$parent/${base}-worktrees"
-}
 
 # --- Test 1: Worktree removed from git worktree list when 'n' answered ---
 {
   repo=$(setup_repo_with_worktree "feature-x")
 
-  echo n | bash "$SCRIPT" "feature-x" >/dev/null 2>&1 <<< "" || \
-    echo n | (cd "$repo" && bash "$SCRIPT" "feature-x" >/dev/null 2>&1) || true
-  # Run with repo as cwd so git rev-parse --show-toplevel returns $repo
   echo n | (cd "$repo" && bash "$SCRIPT" "feature-x") >/dev/null 2>&1 || true
 
   if ! git -C "$repo" worktree list 2>/dev/null | grep -q "feature-x"; then
