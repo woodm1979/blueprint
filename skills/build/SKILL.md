@@ -152,6 +152,14 @@ Print exactly:
 
 > Future considerations written to `<PRD path>`. Run /brainstorm and review the **Future Considerations** section to evaluate next steps.
 
+### Step 6c — Exit worktree (conditional)
+
+**Only if a `Worktree:` field was present in the PLAN header** (i.e., `EnterWorktree` was called in Step 1): call `ExitWorktree` with `action: "keep"` to return the session to the main repo. Print exactly:
+
+> Returned to main repo from worktree. Feature branch is intact.
+
+**If no `Worktree:` field was present:** skip this step silently — backwards-compat preserved.
+
 ## No-subagent fallback mode
 
 **When to use:** Only when the Agent tool is unavailable in the current harness (no subagent support). The subagent-driven path above is strictly preferred — quality is significantly higher with fresh-context subagents and independent reviewers. Tell your human partner that `/build` works much better with access to subagents, and if possible switch to a harness that supports them.

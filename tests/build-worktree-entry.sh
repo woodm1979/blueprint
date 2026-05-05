@@ -55,4 +55,14 @@ skill_contains 'git worktree list' || skill_contains 'exists' \
   && pass "Step 1 checks worktree existence" \
   || fail "Step 1 missing worktree existence check"
 
+# AC: ExitWorktree call present in completion section
+skill_contains 'ExitWorktree' \
+  && pass "Step 6c calls ExitWorktree to return to main repo" \
+  || fail "Step 6c missing ExitWorktree call"
+
+# AC: ExitWorktree is guarded by Worktree: field presence (backwards-compat)
+skill_contains 'Only if a' && skill_contains 'Worktree:' \
+  && pass "Step 6c ExitWorktree is guarded by Worktree: field (backwards-compat)" \
+  || fail "Step 6c missing backwards-compat guard for ExitWorktree"
+
 summarize
