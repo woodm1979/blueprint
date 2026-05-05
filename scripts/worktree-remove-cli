@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BRANCH_NAME="${1:?Usage: worktree-remove-cli <branch>}"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH_NAME"
+
+"$SCRIPT_DIR/worktree-remove" "$WORKTREE_DIR"
+
+printf "Delete branch '%s'? [y/N] " "$BRANCH_NAME"
+read -r answer
+if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+  git branch -d "$BRANCH_NAME"
+  echo "Branch '$BRANCH_NAME' deleted."
+else
+  echo "Branch '$BRANCH_NAME' kept."
+fi

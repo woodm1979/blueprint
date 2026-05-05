@@ -7,36 +7,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$REPO_ROOT/scripts/worktree-remove"
 . "$REPO_ROOT/tests/helpers.sh"
 
-# Setup: create a temp "repo" with a worktree
-setup_repo_with_worktree() {
-  local dir branch
-  dir=$(mktemp -d)
-  branch="${1:-test-remove}"
-  git -C "$dir" init -q
-  git -C "$dir" config user.email "test@test.com"
-  git -C "$dir" config user.name "Test"
-  touch "$dir/README.md"
-  git -C "$dir" add README.md
-  git -C "$dir" commit -q -m "init"
-
-  local parent base wt_dir
-  parent="$(dirname "$dir")"
-  base="$(basename "$dir")"
-  wt_dir="$parent/${base}-worktrees/$branch"
-  mkdir -p "$parent/${base}-worktrees"
-  git -C "$dir" worktree add -b "$branch" "$wt_dir" >/dev/null 2>&1
-
-  echo "$dir"
-}
-
-cleanup() {
-  local repo_dir="$1"
-  local parent base
-  parent="$(dirname "$repo_dir")"
-  base="$(basename "$repo_dir")"
-  rm -rf "$repo_dir"
-  rm -rf "$parent/${base}-worktrees"
-}
 
 # --- Test 1: Removes existing worktree from git worktree list ---
 {
