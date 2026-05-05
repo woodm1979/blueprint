@@ -3,7 +3,7 @@
 > PRD: ./2026-05-05-build-exit-worktree-cli-PRD.md
 > Executor: /build
 > Worktree: `/Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/build-exit-worktree-cli`
-> Created: 2026-05-05  |  Last touched: 2026-05-05
+> Created: 2026-05-05  |  Last touched: 2026-05-05 (Section 2 complete)
 
 ## Architectural decisions
 
@@ -54,7 +54,7 @@ Extend `skills/build/SKILL.md` to call `ExitWorktree` after Step 6b. The call is
 
 ## Section 2: worktree-remove-cli script + hooks test
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 2
 
@@ -64,12 +64,12 @@ Write `scripts/worktree-remove-cli` — a bash script that takes a branch name, 
 
 ### Acceptance criteria
 
-- [ ] `scripts/worktree-remove-cli <branch>` removes the worktree at `<parent>/<repo>-worktrees/<branch>` from disk and from `git worktree list`
-- [ ] The script prompts "Delete branch '<branch>'? [y/N]"; answering `y` deletes the local branch, `n` keeps it
-- [ ] `tests/worktree-remove-cli.sh` passes: worktree removed, branch kept when `n` is passed via stdin
-- [ ] `tests/worktree-create.sh` passes with new assertions: `hooks/worktree-create.sh` is executable; `hooks/hooks.json` references `WorktreeCreate` and `worktree-create.sh`
-- [ ] `bash tests/worktree-remove-cli.sh` produces 0 failures
-- [ ] `bash tests/worktree-create.sh` produces 0 failures
+- [x] `scripts/worktree-remove-cli <branch>` removes the worktree at `<parent>/<repo>-worktrees/<branch>` from disk and from `git worktree list`
+- [x] The script prompts "Delete branch '<branch>'? [y/N]"; answering `y` deletes the local branch, `n` keeps it
+- [x] `tests/worktree-remove-cli.sh` passes: worktree removed, branch kept when `n` is passed via stdin
+- [x] `tests/worktree-create.sh` passes with new assertions: `hooks/worktree-create.sh` is executable; `hooks/hooks.json` references `WorktreeCreate` and `worktree-create.sh`
+- [x] `bash tests/worktree-remove-cli.sh` produces 0 failures
+- [x] `bash tests/worktree-create.sh` produces 0 failures
 
 ### Notes for executor
 
@@ -83,7 +83,6 @@ Write `scripts/worktree-remove-cli` — a bash script that takes a branch name, 
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 2a4505a
+- Tests added: 6 (4 in worktree-remove-cli.sh, 2 in worktree-create.sh)
+- Deviations from plan: none
