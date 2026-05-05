@@ -23,7 +23,7 @@
 
 ## Section 1: ExitWorktree in /build + tests
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 1
 
@@ -33,10 +33,10 @@ Extend `skills/build/SKILL.md` to call `ExitWorktree` after Step 6b. The call is
 
 ### Acceptance criteria
 
-- [ ] `skills/build/SKILL.md` contains an `ExitWorktree` call in the completion/handoff section
-- [ ] The ExitWorktree call is guarded by the presence of a `Worktree:` field (backwards-compat: no ExitWorktree for plans without a worktree)
-- [ ] `tests/build-worktree-entry.sh` passes including new assertions for ExitWorktree
-- [ ] `bash tests/build-worktree-entry.sh` produces 0 failures
+- [x] `skills/build/SKILL.md` contains an `ExitWorktree` call in the completion/handoff section
+- [x] The ExitWorktree call is guarded by the presence of a `Worktree:` field (backwards-compat: no ExitWorktree for plans without a worktree)
+- [x] `tests/build-worktree-entry.sh` passes including new assertions for ExitWorktree
+- [x] `bash tests/build-worktree-entry.sh` produces 0 failures
 
 ### Notes for executor
 
@@ -46,10 +46,9 @@ Extend `skills/build/SKILL.md` to call `ExitWorktree` after Step 6b. The call is
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 689864d
+- Tests added: 2
+- Deviations from plan: none
 
 ---
 
