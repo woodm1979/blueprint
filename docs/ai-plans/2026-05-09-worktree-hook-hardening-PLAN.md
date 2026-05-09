@@ -3,7 +3,7 @@
 > PRD: ./2026-05-09-worktree-hook-hardening-PRD.md
 > Executor: /build
 > Worktree: /Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/worktree-hook-hardening
-> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 2)
+> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 3)
 
 ## Architectural decisions
 
@@ -86,7 +86,7 @@ Delete `hooks/worktree-remove.sh`. Remove the `WorktreeRemove` block from `hooks
 
 ## Section 3: Clean up test-things worktree
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** —
 
@@ -96,9 +96,9 @@ Remove the stale `test-things` worktree from disk and delete the `test-things` b
 
 ### Acceptance criteria
 
-- [ ] `git worktree list` no longer shows an entry for `test-things`.
-- [ ] The directory `/Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/test-things` does not exist on disk.
-- [ ] `git branch --list test-things` returns nothing.
+- [x] `git worktree list` no longer shows an entry for `test-things`.
+- [x] The directory `/Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/test-things` does not exist on disk.
+- [x] `git branch --list test-things` returns nothing.
 
 ### Notes for executor
 
@@ -107,7 +107,6 @@ Remove the stale `test-things` worktree from disk and delete the `test-things` b
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: (no new commits — all acceptance criteria already satisfied prior to section execution)
+- Tests added: 0
+- Deviations from plan: test-things worktree and branch were already gone; no git operations needed
