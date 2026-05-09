@@ -37,7 +37,7 @@ cleanup() {
   base="$(basename "$repo")"
   expected_wt="$parent/${base}-worktrees/test-feature"
 
-  stdout=$(cd "$repo" && bash "$SCRIPT" "test-feature" 2>/dev/null)
+  stdout=$(bash "$SCRIPT" "$repo" "test-feature" 2>/dev/null)
   # macOS: mktemp may return /var/... but git resolves to /private/var/...
   real_expected=$(cd "$expected_wt" && pwd -P 2>/dev/null || echo "$expected_wt")
   real_stdout=$(cd "$stdout" && pwd -P 2>/dev/null || echo "$stdout")
@@ -61,7 +61,7 @@ cleanup() {
   fi
 
   # Progress messages go to stderr, not stdout
-  stderr_output=$(cd "$repo" && bash "$SCRIPT" "test-feature2" 2>&1 1>/dev/null)
+  stderr_output=$(bash "$SCRIPT" "$repo" "test-feature2" 2>&1 1>/dev/null)
   if [[ -n "$stderr_output" ]]; then
     pass "progress messages go to stderr"
   else
@@ -82,7 +82,7 @@ cleanup() {
   git -C "$repo" checkout -q -b "existing-branch"
   git -C "$repo" checkout -q main 2>/dev/null || git -C "$repo" checkout -q master 2>/dev/null
 
-  cd "$repo" && bash "$SCRIPT" "existing-branch" >/dev/null 2>&1
+  bash "$SCRIPT" "$repo" "existing-branch" >/dev/null 2>&1
 
   if git -C "$repo" worktree list | grep -q "$existing_wt"; then
     pass "existing branch: worktree created successfully"
@@ -105,7 +105,7 @@ cleanup() {
   base="$(basename "$repo")"
   wt="$parent/${base}-worktrees/env-test"
 
-  cd "$repo" && bash "$SCRIPT" "env-test" >/dev/null 2>&1
+  bash "$SCRIPT" "$repo" "env-test" >/dev/null 2>&1
 
   if [[ -L "$wt/.env" ]]; then
     pass ".env symlinked into worktree"
@@ -127,7 +127,7 @@ cleanup() {
   base="$(basename "$repo")"
   wt="$parent/${base}-worktrees/claude-test"
 
-  cd "$repo" && bash "$SCRIPT" "claude-test" >/dev/null 2>&1
+  bash "$SCRIPT" "$repo" "claude-test" >/dev/null 2>&1
 
   if [[ -L "$wt/.claude/settings.json" ]]; then
     pass ".claude/settings.json symlinked into worktree"
@@ -159,7 +159,7 @@ EOF
   base="$(basename "$repo")"
   wt="$parent/${base}-worktrees/override-test"
 
-  cd "$repo" && OVERRIDE_LOG="$override_log" bash "$SCRIPT" "override-test" >/dev/null 2>&1
+  OVERRIDE_LOG="$override_log" bash "$SCRIPT" "$repo" "override-test" >/dev/null 2>&1
 
   if grep -q "override ran:" "$override_log" 2>/dev/null; then
     pass "override script ran"
@@ -201,6 +201,72 @@ EOF
     pass "hooks/hooks.json references WorktreeCreate -> worktree-create.sh"
   else
     fail "hooks/hooks.json references WorktreeCreate -> worktree-create.sh"
+  fi
+}
+
+# --- Test 8: Hook reads .cwd and .name from stdin JSON payload ---
+{
+  repo=$(setup_repo)
+  hook_script="$REPO_ROOT/hooks/worktree-create.sh"
+
+  # Create a minimal fake repo that has scripts/worktree-create as a spy
+  # We can't override $REPO_ROOT/scripts/worktree-create (it's the real plugin),
+  # so instead verify end-to-end: the hook, given a valid payload, creates a worktree.
+  parent="$(dirname "$repo")"
+  base="$(basename "$repo")"
+  expected_wt="$parent/${base}-worktrees/my-feature"
+
+  payload="{\"cwd\": \"$repo\", \"name\": \"my-feature\"}"
+  echo "$payload" | bash "$hook_script" >/dev/null 2>&1
+
+  if git -C "$repo" worktree list | grep -q "my-feature"; then
+    pass "hook reads .name from stdin JSON payload"
+  else
+    fail "hook reads .name from stdin JSON payload"
+  fi
+
+  if [[ -d "$expected_wt" ]]; then
+    pass "hook derives REPO_ROOT and passes it to worktree-create"
+  else
+    fail "hook derives REPO_ROOT and passes it to worktree-create"
+  fi
+
+  cleanup "$repo"
+}
+
+# --- Test 9: Hook exits non-zero when NAME is empty ---
+{
+  repo=$(setup_repo)
+  hook_script="$REPO_ROOT/hooks/worktree-create.sh"
+  payload="{\"cwd\": \"$repo\", \"name\": \"\"}"
+  if echo "$payload" | bash "$hook_script" >/dev/null 2>&1; then
+    fail "hook exits non-zero when NAME is empty"
+  else
+    pass "hook exits non-zero when NAME is empty"
+  fi
+  cleanup "$repo"
+}
+
+# --- Test 10: Hook exits non-zero when NAME is the string "null" ---
+{
+  repo=$(setup_repo)
+  hook_script="$REPO_ROOT/hooks/worktree-create.sh"
+  payload="{\"cwd\": \"$repo\", \"name\": null}"
+  if echo "$payload" | bash "$hook_script" >/dev/null 2>&1; then
+    fail "hook exits non-zero when NAME is JSON null (jq -r outputs string 'null')"
+  else
+    pass "hook exits non-zero when NAME is JSON null (jq -r outputs string 'null')"
+  fi
+  cleanup "$repo"
+}
+
+# --- Test 11: Hook script contains no BASH_SOURCE, cd, or pushd tricks ---
+{
+  hook_script="$REPO_ROOT/hooks/worktree-create.sh"
+  if grep -q 'BASH_SOURCE\|pushd\|cd ' "$hook_script"; then
+    fail "hook script contains no BASH_SOURCE/cd/pushd tricks"
+  else
+    pass "hook script contains no BASH_SOURCE/cd/pushd tricks"
   fi
 }
 
