@@ -3,7 +3,7 @@
 > PRD: ./2026-05-09-worktree-hook-hardening-PRD.md
 > Executor: /build
 > Worktree: /Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/worktree-hook-hardening
-> Created: 2026-05-09  |  Last touched: 2026-05-09
+> Created: 2026-05-09  |  Last touched: 2026-05-09 (build started)
 
 ## Architectural decisions
 
