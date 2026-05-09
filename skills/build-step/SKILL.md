@@ -1,6 +1,6 @@
 ---
 name: build-step
-description: Atomic section-execution primitive for the blueprint suite. Discovers the PLAN file, selects the next unstarted section, dispatches the full section-controller → implementer → spec reviewer → quality reviewer subagent chain, updates the PLAN file, and outputs SECTION_COMPLETE, ALL_SECTIONS_COMPLETE, or BLOCKED: <reason>.
+description: Execute one PLAN section via subagent chain. Outputs SECTION_COMPLETE or BLOCKED.
 ---
 
 # /build-step

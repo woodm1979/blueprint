@@ -1,6 +1,6 @@
 ---
 name: blueprint
-description: Use when you want both a PRD and a PLAN as persistent committed artifacts in docs/ai-plans/. Part of the blueprint suite. Reads prior /brainstorm conversation context; writes PRD.md + PLAN.md. Handles both new features and extensions. Pairs with /build (executor).
+description: Write PRD.md + PLAN.md artifacts from /brainstorm context. Pairs with /build.
 ---
 
 # /blueprint

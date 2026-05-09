@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: Open-ended exploration and Q&A about a feature or problem. No artifacts produced. Primary entry point for the blueprint suite — leads into /blueprint for committed artifacts.
+description: Open-ended Q&A exploration. No artifacts. First step before /blueprint.
 ---
 
 # /brainstorm

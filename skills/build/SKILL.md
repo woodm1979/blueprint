@@ -1,6 +1,6 @@
 ---
 name: build
-description: Use when executing sections from a PLAN file produced by /blueprint — dispatches one subagent per section that invokes /build-step, reads the completion signal, and loops until all sections are done. Part of the blueprint suite. For AFK (unattended) use, see scripts/afk-build.sh.
+description: Execute all sections in a blueprint PLAN file by looping /build-step.
 ---
 
 # /build

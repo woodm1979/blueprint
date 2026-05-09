@@ -1,6 +1,6 @@
 ---
 name: cleanup-worktree
-description: Remove a feature worktree after its work is merged. Accepts a PLAN file path, resolves the Worktree: field, runs three sanity checks (uncommitted changes, unpushed commits, unmerged branch), and triggers worktree removal via WorktreeRemove or scripts/worktree-remove.
+description: Remove a feature worktree after merge with uncommitted/unpushed safety checks.
 ---
 
 # /cleanup-worktree
