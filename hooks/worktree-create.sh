@@ -7,6 +7,7 @@ INPUT=$(cat)
 CWD=$(jq -r '.cwd' <<< "$INPUT")
 NAME=$(jq -r '.name' <<< "$INPUT")
 
+# jq -r emits the string "null" for JSON null
 if [[ -z "$NAME" || "$NAME" == "null" ]]; then
   echo "Error: worktree name is missing or null" >&2
   exit 1
