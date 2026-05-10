@@ -3,7 +3,7 @@
 > PRD: ./2026-05-09-blueprint-skill-hardening-PRD.md
 > Executor: /build
 > Worktree: /Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/blueprint-skill-hardening
-> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 1 complete)
+> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 2 complete)
 
 ## Architectural decisions
 
@@ -53,7 +53,7 @@ Edit `skills/brainstorm/SKILL.md` to add a sequencing rule in the grill-me loop:
 
 ## Section 2: Blueprint vertical-slice constraint
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 2
 
@@ -63,10 +63,10 @@ Edit `skills/blueprint/SKILL.md` to add an explicit vertical-slice constraint: e
 
 ### Acceptance criteria
 
-- [ ] Step 5 in SKILL.md includes an explicit statement that sections must be vertical slices and defines what that means (thin, demoable, end-to-end through all touched layers)
-- [ ] Step 5 explicitly names horizontal slices as a disallowed shape with an example (e.g., "Phase 1 = all schema, Phase 2 = all API" is wrong)
-- [ ] Step 7's vertical-slice checklist item is strengthened to include a pass/fail test: "Is each section demoable on its own without depending on a subsequent section?"
-- [ ] The "Red flags — STOP" list in SKILL.md names horizontal slices as a stop condition
+- [x] Step 5 in SKILL.md includes an explicit statement that sections must be vertical slices and defines what that means (thin, demoable, end-to-end through all touched layers)
+- [x] Step 5 explicitly names horizontal slices as a disallowed shape with an example (e.g., "Phase 1 = all schema, Phase 2 = all API" is wrong)
+- [x] Step 7's vertical-slice checklist item is strengthened to include a pass/fail test: "Is each section demoable on its own without depending on a subsequent section?"
+- [x] The "Red flags — STOP" list in SKILL.md names horizontal slices as a stop condition
 
 ### Notes for executor
 
@@ -76,10 +76,9 @@ Edit `skills/blueprint/SKILL.md` to add an explicit vertical-slice constraint: e
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: f8495f6
+- Tests added: 7
+- Deviations from plan: none
 
 ---
 
