@@ -34,13 +34,15 @@ grep -qiE 'not (to )?recite|do not recite' "$BRAINSTORM" \
   && pass "brainstorm SKILL.md explicitly says not to recite glossary to user" \
   || fail "brainstorm SKILL.md missing 'not to recite' instruction"
 
+STEP10="$(awk '/### Step 10/,/## File formats/' "$BLUEPRINT")"
+
 # AC3: /blueprint Step 10 includes AskUserQuestion offering to update/create CONTEXT.md
-awk '/### Step 10/,/## File formats/' "$BLUEPRINT" | grep -qF 'CONTEXT.md' \
+echo "$STEP10" | grep -qF 'CONTEXT.md' \
   && pass "blueprint Step 10 references CONTEXT.md" \
   || fail "blueprint Step 10 missing CONTEXT.md reference"
 
 # AC4: The offer is non-blocking — if declined, handoff proceeds normally
-awk '/### Step 10/,/## File formats/' "$BLUEPRINT" | grep -qiE 'declin|skip|proceed|non-blocking' \
+echo "$STEP10" | grep -qiE 'declin|skip|proceed|non-blocking' \
   && pass "blueprint Step 10 CONTEXT.md offer is non-blocking" \
   || fail "blueprint Step 10 CONTEXT.md offer not marked as non-blocking"
 

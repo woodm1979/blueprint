@@ -7,22 +7,18 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILL="$REPO_ROOT/skills/brainstorm/SKILL.md"
 . "$REPO_ROOT/tests/helpers.sh"
 
-skill_contains() {
-  grep -qF "$1" "$SKILL"
-}
-
 # AC1/AC2: Problem-first sequencing — recommended answer deferred until problem questions exhausted
-skill_contains 'problem questions' \
+grep -qF 'problem questions' "$SKILL" \
   && pass "SKILL.md references problem questions sequencing" \
   || fail "SKILL.md missing problem questions sequencing"
 
 # AC2: Recommended answer is still present (deferred, not removed)
-skill_contains 'recommended answer' \
+grep -qF 'recommended answer' "$SKILL" \
   && pass "SKILL.md still includes recommended answer instruction" \
   || fail "SKILL.md missing recommended answer instruction (should be deferred, not removed)"
 
 # AC3: Red flag list includes premature solution proposal check
-skill_contains 'solution proposed before problem' \
+grep -qF 'solution proposed before problem' "$SKILL" \
   && pass "Red flag list includes premature solution proposal check" \
   || fail "Red flag list missing premature solution proposal check"
 
