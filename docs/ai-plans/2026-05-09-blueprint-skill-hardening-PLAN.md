@@ -3,7 +3,7 @@
 > PRD: ./2026-05-09-blueprint-skill-hardening-PRD.md
 > Executor: /build
 > Worktree: /Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/blueprint-skill-hardening
-> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 2 complete)
+> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 3 complete)
 
 ## Architectural decisions
 
@@ -84,7 +84,7 @@ Edit `skills/blueprint/SKILL.md` to add an explicit vertical-slice constraint: e
 
 ## Section 3: CONTEXT.md integration
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 3, 4
 
@@ -94,11 +94,11 @@ Add CONTEXT.md awareness to both skills. In `skills/brainstorm/SKILL.md`: add a 
 
 ### Acceptance criteria
 
-- [ ] `/brainstorm` SKILL.md includes a pre-interview step (before Step 1) that reads `CONTEXT.md` if present; if absent, the step is skipped silently with no user-facing message
-- [ ] The pre-interview step instructs Claude to use the glossary to challenge fuzzy terms during the grill-me loop (not to recite the glossary to the user)
-- [ ] `/blueprint` Step 10 (handoff) includes an `AskUserQuestion` offering to update or create `CONTEXT.md` with domain terms surfaced during the session
-- [ ] The CONTEXT.md offer in `/blueprint` is non-blocking: if the user declines, handoff proceeds normally
-- [ ] Both SKILL.md files note that CONTEXT.md lives at the repo root (no path configuration)
+- [x] `/brainstorm` SKILL.md includes a pre-interview step (before Step 1) that reads `CONTEXT.md` if present; if absent, the step is skipped silently with no user-facing message
+- [x] The pre-interview step instructs Claude to use the glossary to challenge fuzzy terms during the grill-me loop (not to recite the glossary to the user)
+- [x] `/blueprint` Step 10 (handoff) includes an `AskUserQuestion` offering to update or create `CONTEXT.md` with domain terms surfaced during the session
+- [x] The CONTEXT.md offer in `/blueprint` is non-blocking: if the user declines, handoff proceeds normally
+- [x] Both SKILL.md files note that CONTEXT.md lives at the repo root (no path configuration)
 
 ### Notes for executor
 
@@ -108,7 +108,6 @@ Add CONTEXT.md awareness to both skills. In `skills/brainstorm/SKILL.md`: add a 
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: bb2518a
+- Tests added: 9
+- Deviations from plan: none
