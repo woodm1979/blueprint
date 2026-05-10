@@ -97,7 +97,7 @@ If `docs/ai-plans/` doesn't exist, create it. Write the PRD using the template i
 
 ### Step 5 — Section breakdown (tracer-bullet vertical slices)
 
-Present a proposed list of sections. Each section is one vertical slice that cuts end-to-end through every layer the feature touches (schema → API → UI → tests) — NOT a horizontal layer.
+Present a proposed list of sections. Each section must be a **thin, demoable vertical slice** that cuts end-to-end through every layer the feature touches (schema → API → UI → tests). Horizontal slices are explicitly disallowed: a section shaped like "Phase 1 = all schema, Phase 2 = all API, Phase 3 = all UI" is wrong — it prevents any section from being demonstrated or tested independently.
 
 For each section in the proposal, show:
 
@@ -154,7 +154,7 @@ This is a checklist YOU run yourself — not a subagent dispatch. Scan both file
 1. **Spec coverage.** Walk each user story in the PRD. Can you point to a section in PLAN that delivers it? List any gaps; add sections inline if missing.
 2. **Placeholder scan.** Any `TBD`, `TODO`, `implement later`, `fill in details`, "add appropriate error handling", "similar to Section N"? Fix them.
 3. **Type consistency.** Do module names, route paths, schema shapes referenced in later sections match what you set in earlier sections and in the PRD architecture sketch? Inconsistencies are bugs.
-4. **Vertical-slice check.** Is each section demoable on its own, or are you describing horizontal layers (all-schema-first, then all-API, then all-UI)? If horizontal, restructure into verticals.
+4. **Vertical-slice check.** For each section, apply this pass/fail test: "Is each section demoable on its own without depending on a subsequent section?" PASS = the section delivers a thin end-to-end behavior you can show a user. FAIL = the section is a horizontal layer (all-schema-first, then all-API, then all-UI). If any section fails, restructure into verticals.
 5. **Model coherence.** Is the `Model:` field appropriate to each section's complexity? An `opus` section that's just "rename a function" or a `haiku` section that's "design a new auth boundary" is a smell.
 6. **Acceptance-criteria externality.** Are criteria observable from the outside, or do they bake in internal implementation choices? Rewrite any that aren't externally testable.
 7. **(Extension only) Append-not-fork.** Confirm no new files were created when extending.
@@ -196,6 +196,17 @@ After the commit, call `AskUserQuestion`:
 If **Yes**, build the issue body from the committed PRD using the template in **File formats → GitHub issue PRD template** below. Use `gh issue create`. Title: the feature name. Report the issue URL back to the user. Then proceed to Step 10.
 
 ### Step 10 — Handoff
+
+Before the handoff message, call `AskUserQuestion`:
+
+> Question: "Any domain terms surfaced during this session worth capturing? I can update (or create) `CONTEXT.md` at the repo root with a glossary of key terms."
+>
+> Options:
+> - `Yes — update CONTEXT.md` — add new terms to the glossary (create the file if absent).
+> - `No — skip` — proceed to handoff without touching CONTEXT.md.
+> - `Let's discuss`
+
+This offer is non-blocking: if the user declines, handoff proceeds normally. `CONTEXT.md` lives at the repo root; no path configuration is needed.
 
 End with exactly this message (substitute the real file paths):
 

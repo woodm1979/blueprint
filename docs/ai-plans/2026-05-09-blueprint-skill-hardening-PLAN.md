@@ -3,7 +3,7 @@
 > PRD: ./2026-05-09-blueprint-skill-hardening-PRD.md
 > Executor: /build
 > Worktree: /Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/blueprint-skill-hardening
-> Created: 2026-05-09  |  Last touched: 2026-05-09
+> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 3 complete)
 
 ## Architectural decisions
 
@@ -23,7 +23,7 @@
 
 ## Section 1: Brainstorm problem-first sequencing
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 1
 
@@ -33,9 +33,9 @@ Edit `skills/brainstorm/SKILL.md` to add a sequencing rule in the grill-me loop:
 
 ### Acceptance criteria
 
-- [ ] Running `/brainstorm` on a feature with multiple unexplored problem branches does not receive a solution proposal until all major problem questions have been asked and answered
-- [ ] The grill-me loop still surfaces a recommended answer for each question — it is deferred, not removed
-- [ ] The red flag list in SKILL.md includes a check for "solution proposed before problem questions exhausted"
+- [x] Running `/brainstorm` on a feature with multiple unexplored problem branches does not receive a solution proposal until all major problem questions have been asked and answered
+- [x] The grill-me loop still surfaces a recommended answer for each question — it is deferred, not removed
+- [x] The red flag list in SKILL.md includes a check for "solution proposed before problem questions exhausted"
 
 ### Notes for executor
 
@@ -45,16 +45,15 @@ Edit `skills/brainstorm/SKILL.md` to add a sequencing rule in the grill-me loop:
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 956a9c7ea4d8a10b23a7fac79cb6a86c5f59ca00
+- Tests added: 4
+- Deviations from plan: none
 
 ---
 
 ## Section 2: Blueprint vertical-slice constraint
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 2
 
@@ -64,10 +63,10 @@ Edit `skills/blueprint/SKILL.md` to add an explicit vertical-slice constraint: e
 
 ### Acceptance criteria
 
-- [ ] Step 5 in SKILL.md includes an explicit statement that sections must be vertical slices and defines what that means (thin, demoable, end-to-end through all touched layers)
-- [ ] Step 5 explicitly names horizontal slices as a disallowed shape with an example (e.g., "Phase 1 = all schema, Phase 2 = all API" is wrong)
-- [ ] Step 7's vertical-slice checklist item is strengthened to include a pass/fail test: "Is each section demoable on its own without depending on a subsequent section?"
-- [ ] The "Red flags — STOP" list in SKILL.md names horizontal slices as a stop condition
+- [x] Step 5 in SKILL.md includes an explicit statement that sections must be vertical slices and defines what that means (thin, demoable, end-to-end through all touched layers)
+- [x] Step 5 explicitly names horizontal slices as a disallowed shape with an example (e.g., "Phase 1 = all schema, Phase 2 = all API" is wrong)
+- [x] Step 7's vertical-slice checklist item is strengthened to include a pass/fail test: "Is each section demoable on its own without depending on a subsequent section?"
+- [x] The "Red flags — STOP" list in SKILL.md names horizontal slices as a stop condition
 
 ### Notes for executor
 
@@ -77,16 +76,15 @@ Edit `skills/blueprint/SKILL.md` to add an explicit vertical-slice constraint: e
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: f8495f6
+- Tests added: 7
+- Deviations from plan: none
 
 ---
 
 ## Section 3: CONTEXT.md integration
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 3, 4
 
@@ -96,11 +94,11 @@ Add CONTEXT.md awareness to both skills. In `skills/brainstorm/SKILL.md`: add a 
 
 ### Acceptance criteria
 
-- [ ] `/brainstorm` SKILL.md includes a pre-interview step (before Step 1) that reads `CONTEXT.md` if present; if absent, the step is skipped silently with no user-facing message
-- [ ] The pre-interview step instructs Claude to use the glossary to challenge fuzzy terms during the grill-me loop (not to recite the glossary to the user)
-- [ ] `/blueprint` Step 10 (handoff) includes an `AskUserQuestion` offering to update or create `CONTEXT.md` with domain terms surfaced during the session
-- [ ] The CONTEXT.md offer in `/blueprint` is non-blocking: if the user declines, handoff proceeds normally
-- [ ] Both SKILL.md files note that CONTEXT.md lives at the repo root (no path configuration)
+- [x] `/brainstorm` SKILL.md includes a pre-interview step (before Step 1) that reads `CONTEXT.md` if present; if absent, the step is skipped silently with no user-facing message
+- [x] The pre-interview step instructs Claude to use the glossary to challenge fuzzy terms during the grill-me loop (not to recite the glossary to the user)
+- [x] `/blueprint` Step 10 (handoff) includes an `AskUserQuestion` offering to update or create `CONTEXT.md` with domain terms surfaced during the session
+- [x] The CONTEXT.md offer in `/blueprint` is non-blocking: if the user declines, handoff proceeds normally
+- [x] Both SKILL.md files note that CONTEXT.md lives at the repo root (no path configuration)
 
 ### Notes for executor
 
@@ -110,7 +108,6 @@ Add CONTEXT.md awareness to both skills. In `skills/brainstorm/SKILL.md`: add a 
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: bb2518a
+- Tests added: 9
+- Deviations from plan: none

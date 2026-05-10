@@ -53,3 +53,12 @@ No new files, no new modules. Both changes are additive edits to existing SKILL.
 ## Open questions
 
 - [ ] TDD enforcement at `/build` time: once section shape is fixed, should `/build-step` be instructed to default to red-green-refactor per section?
+
+## Future Considerations
+
+- **TDD enforcement in `/build-step`**: Now that section shape is locked to vertical slices, `/build-step` could explicitly require a failing test before any implementation begins. The current skill encourages TDD but doesn't enforce it; a hard gate would close the gap.
+- **CONTEXT.md format guidance**: The current spec says "plain markdown (key terms + definitions)" with no schema. A lightweight convention (e.g., `## Term\n<definition>`) would make it easier for both Claude and humans to read and extend the glossary consistently.
+- **Automated CONTEXT.md conflict detection**: When `/brainstorm` reads CONTEXT.md, it currently uses it only to challenge fuzzy terms during the grill-me loop. A future step could detect outright contradictions between a user's new framing and an existing glossary entry and surface them explicitly.
+- **Section demoability enforcement in `/blueprint`**: The vertical-slice constraint is stated in the SKILL.md but enforced only via Step 7 self-review. An explicit `AskUserQuestion` checkpoint — "Can each of these sections be demoed independently?" — would make the gate interactive rather than advisory.
+- **CONTEXT.md decay handling**: Glossary entries can go stale as a codebase evolves. A future `/blueprint` or `/brainstorm` step could flag entries that conflict with the current problem framing and offer to archive or revise them.
+- **Multi-repo CONTEXT.md**: The current spec anchors CONTEXT.md to the repo root. For monorepos or multi-repo setups, per-package glossaries and a root-level aggregate may be worth specifying.
