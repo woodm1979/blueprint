@@ -55,6 +55,7 @@ These rules apply to EVERY user-facing message during intake. Violating any of t
 - About to call `AskUserQuestion` immediately after a "Let's discuss" selection without first asking an open question → stop.
 - About to add an option not defined in the skill spec (e.g., "Chat about this", "Skip interview and plan immediately") → remove it.
 - About to announce a design before asking the user anything → back up.
+- solution proposed before problem questions exhausted → defer: finish the problem branch first.
 
 ## Process
 
@@ -62,8 +63,12 @@ These rules apply to EVERY user-facing message during intake. Violating any of t
 
 Interview the user relentlessly about every aspect of the feature or problem until shared understanding is reached. Walk down each branch of the decision tree, resolving dependencies between decisions one-by-one.
 
+**Sequencing — problem questions before solution proposals:**
+Exhaust all major problem questions first. Do not propose a solution shape or recommend an approach until the problem branch is fully resolved. Once the problem is understood, provide your recommended answer for each remaining decision with brief reasoning.
+
 **For each question:**
-- Provide your recommended answer with brief reasoning.
+- If the question is a problem question (what, why, who, scope, constraints), ask it without proposing a solution yet.
+- Once all major problem questions are resolved, provide your recommended answer with brief reasoning for each design/solution decision.
 - If the decision is non-obvious, lead with a tradeoff table (per UX rule 7) before asking.
 - If answering the question requires codebase knowledge, explore the codebase first (targeted: single file or `grep`) — then ask. Do not do a broad upfront recon pass; explore only when a specific question demands it.
 - If the user selects **"Let's discuss"**, respond with "What's on your mind?" as plain prose and wait for their reply before calling `AskUserQuestion` again.
