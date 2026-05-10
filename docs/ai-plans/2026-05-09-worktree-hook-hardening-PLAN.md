@@ -3,7 +3,7 @@
 > PRD: ./2026-05-09-worktree-hook-hardening-PRD.md
 > Executor: /build
 > Worktree: /Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/worktree-hook-hardening
-> Created: 2026-05-09  |  Last touched: 2026-05-09
+> Created: 2026-05-09  |  Last touched: 2026-05-09 (Section 3)
 
 ## Architectural decisions
 
@@ -23,7 +23,7 @@
 
 ## Section 1: Harden worktree-create hook
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 1, 2
 
@@ -33,11 +33,11 @@ Rewrite `hooks/worktree-create.sh` to read `.cwd` and `.name` from the stdin JSO
 
 ### Acceptance criteria
 
-- [ ] Hook reads `.cwd` from the event payload JSON (not from `${BASH_SOURCE[0]}`).
-- [ ] Hook reads `.name` from the event payload JSON.
-- [ ] Hook exits non-zero and prints an error if `NAME` is empty or the string `"null"`.
-- [ ] Hook passes `REPO_ROOT` (derived from `git -C "$CWD"`) and `NAME` to `scripts/worktree-create`.
-- [ ] No `cd`, `pushd`, or `BASH_SOURCE`-based path tricks remain in the script.
+- [x] Hook reads `.cwd` from the event payload JSON (not from `${BASH_SOURCE[0]}`).
+- [x] Hook reads `.name` from the event payload JSON.
+- [x] Hook exits non-zero and prints an error if `NAME` is empty or the string `"null"`.
+- [x] Hook passes `REPO_ROOT` (derived from `git -C "$CWD"`) and `NAME` to `scripts/worktree-create`.
+- [x] No `cd`, `pushd`, or `BASH_SOURCE`-based path tricks remain in the script.
 
 ### Notes for executor
 
@@ -47,16 +47,15 @@ Rewrite `hooks/worktree-create.sh` to read `.cwd` and `.name` from the stdin JSO
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 16ef449157d0f4d4a68af4ee980a4453460bfa01
+- Tests added: 5 (17 total, all passing)
+- Deviations from plan: scripts/worktree-create updated to accept REPO_ROOT as arg1, NAME as arg2 (was single-arg); all internal git calls updated to use git -C "$REPO_ROOT"
 
 ---
 
 ## Section 2: Remove WorktreeRemove dead code
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 3, 4
 
@@ -66,10 +65,10 @@ Delete `hooks/worktree-remove.sh`. Remove the `WorktreeRemove` block from `hooks
 
 ### Acceptance criteria
 
-- [ ] `hooks/worktree-remove.sh` no longer exists in the repo.
-- [ ] `hooks/hooks.json` contains no `WorktreeRemove` key.
-- [ ] `skills/cleanup-worktree/SKILL.md` Step 7 uses `git worktree remove --force "$WORKTREE_DIR" && git worktree prune` directly.
-- [ ] `skills/cleanup-worktree/SKILL.md` contains no reference to `WorktreeRemove` anywhere.
+- [x] `hooks/worktree-remove.sh` no longer exists in the repo.
+- [x] `hooks/hooks.json` contains no `WorktreeRemove` key.
+- [x] `skills/cleanup-worktree/SKILL.md` Step 7 uses `git worktree remove --force "$WORKTREE_DIR" && git worktree prune` directly.
+- [x] `skills/cleanup-worktree/SKILL.md` contains no reference to `WorktreeRemove` anywhere.
 
 ### Notes for executor
 
@@ -79,16 +78,15 @@ Delete `hooks/worktree-remove.sh`. Remove the `WorktreeRemove` block from `hooks
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: bc70cab
+- Tests added: 0 net (tests/worktree-remove.sh tests 5 and 6 updated to assert new state; total 24 tests passing)
+- Deviations from plan: none
 
 ---
 
 ## Section 3: Clean up test-things worktree
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** —
 
@@ -98,9 +96,9 @@ Remove the stale `test-things` worktree from disk and delete the `test-things` b
 
 ### Acceptance criteria
 
-- [ ] `git worktree list` no longer shows an entry for `test-things`.
-- [ ] The directory `/Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/test-things` does not exist on disk.
-- [ ] `git branch --list test-things` returns nothing.
+- [x] `git worktree list` no longer shows an entry for `test-things`.
+- [x] The directory `/Users/woodnt/Code/src/github.com/woodm1979/blueprint-worktrees/test-things` does not exist on disk.
+- [x] `git branch --list test-things` returns nothing.
 
 ### Notes for executor
 
@@ -109,7 +107,6 @@ Remove the stale `test-things` worktree from disk and delete the `test-things` b
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: (no new commits — all acceptance criteria already satisfied prior to section execution)
+- Tests added: 0
+- Deviations from plan: test-things worktree and branch were already gone; no git operations needed

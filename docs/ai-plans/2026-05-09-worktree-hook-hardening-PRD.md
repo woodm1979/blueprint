@@ -51,3 +51,11 @@ Four targeted changes:
 ## Open questions
 
 - [x] Should `test-things` branch be deleted from git? → Yes.
+
+## Future Considerations
+
+- **Validate `.cwd` from the payload** — the hook currently trusts `.cwd` without checking that it is non-empty or non-`"null"`. A malformed payload with a null `.cwd` will produce a cryptic `git -C ""` error rather than a clear message.
+- **Consolidate jq parsing** — `hooks/worktree-create.sh` calls `jq` twice on the same input string (once for `.cwd`, once for `.name`). A single `jq -r '[.cwd,.name]|@tsv` call would be more efficient if the hook grows more fields.
+- **`scripts/worktree-create` interface test coverage** — the new two-argument interface (`REPO_ROOT`, `BRANCH`) is tested end-to-end through the hook, but there are no unit tests that call `scripts/worktree-create` directly with a bad `REPO_ROOT` (e.g., a non-git directory). Adding such tests would catch regressions if the script's error handling changes.
+- **`PLUGIN_ROOT` robustness** — `$(dirname "$0")/..` is relative when the hook is invoked with a relative path. Claude Code currently uses absolute paths, but a defensive `cd ... && pwd` resolution (in a subshell, not cwd) would eliminate the latent risk if invocation conventions change.
+- **Prune pre-existing dead worktrees automatically** — the `test-things` cleanup was a manual step that required user intervention to cross a worktree boundary. A periodic `git worktree prune` in CI or a documented runbook entry would prevent stale entries from accumulating again.
