@@ -92,23 +92,23 @@ SCRIPT="$REPO_ROOT/scripts/worktree-remove"
   cleanup "$repo"
 }
 
-# --- Test 5: Hook script is executable ---
+# --- Test 5: Hook script does not exist ---
 {
   hook_script="$REPO_ROOT/hooks/worktree-remove.sh"
-  if [[ -x "$hook_script" ]]; then
-    pass "hooks/worktree-remove.sh is executable"
+  if [[ ! -e "$hook_script" ]]; then
+    pass "hooks/worktree-remove.sh does not exist"
   else
-    fail "hooks/worktree-remove.sh is executable (not found or not executable)"
+    fail "hooks/worktree-remove.sh does not exist (file still present)"
   fi
 }
 
-# --- Test 6: hooks/hooks.json references WorktreeRemove ---
+# --- Test 6: hooks/hooks.json contains no WorktreeRemove key ---
 {
   hooks_json="$REPO_ROOT/hooks/hooks.json"
-  if grep -q "WorktreeRemove" "$hooks_json" && grep -q "worktree-remove.sh" "$hooks_json"; then
-    pass "hooks/hooks.json references WorktreeRemove -> worktree-remove.sh"
+  if ! grep -q "WorktreeRemove" "$hooks_json"; then
+    pass "hooks/hooks.json contains no WorktreeRemove key"
   else
-    fail "hooks/hooks.json references WorktreeRemove -> worktree-remove.sh"
+    fail "hooks/hooks.json contains no WorktreeRemove key (still present)"
   fi
 }
 

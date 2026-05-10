@@ -1,21 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BRANCH="${1:?Usage: worktree-create <branch-name>}"
-
-REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_ROOT="${1:?Usage: worktree-create <repo-root> <branch-name>}"
+BRANCH="${2:?Usage: worktree-create <repo-root> <branch-name>}"
 WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH"
 
-trap 'echo "Setup failed, removing worktree..." >&2; git worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
+trap 'echo "Setup failed, removing worktree..." >&2; git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
 
 _add_worktree() {
-  git worktree prune >&2
-  if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  git -C "$REPO_ROOT" worktree prune >&2
+  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
     echo "Branch '$BRANCH' already exists, checking it out..." >&2
-    git worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+    git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH" >&2
   else
     echo "Creating new branch '$BRANCH'..." >&2
-    git worktree add -b "$BRANCH" "$WORKTREE_DIR" >&2
+    git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" >&2
   fi
 }
 
@@ -35,7 +34,7 @@ _add_worktree
 for env_file in "$REPO_ROOT"/.env*; do
   [[ -f "$env_file" ]] || continue
   filename=$(basename "$env_file")
-  if git check-ignore -q "$env_file" 2>/dev/null; then
+  if git -C "$REPO_ROOT" check-ignore -q "$env_file" 2>/dev/null; then
     ln -sf "$env_file" "$WORKTREE_DIR/$filename"
     echo "Symlinked $filename" >&2
   fi
@@ -52,7 +51,7 @@ if [[ -d "$REPO_ROOT/.claude" ]]; then
   done < <(
     comm -23 \
       <(find "$REPO_ROOT/.claude" -type f | sed "s|$REPO_ROOT/||" | sort) \
-      <(git ls-files .claude/ | sort)
+      <(git -C "$REPO_ROOT" ls-files .claude/ | sort)
   )
 fi
 

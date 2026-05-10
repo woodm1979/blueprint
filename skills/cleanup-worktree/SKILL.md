@@ -11,7 +11,7 @@ Safely removes a feature worktree after its branch has been merged. Given a PLAN
 
 1. Resolves the `Worktree:` field from the PLAN header.
 2. Runs three sanity checks in order — uncommitted changes, unpushed commits, unmerged branch.
-3. On confirmation, triggers `WorktreeRemove` (or falls back to `scripts/worktree-remove`) for the worktree path.
+3. On confirmation, runs `git worktree remove --force "$WORKTREE_DIR" && git worktree prune`.
 
 ## Process
 
@@ -77,9 +77,11 @@ If the feature branch is **not** in the merged list:
 
 ### Step 7 — Remove worktree
 
-Trigger removal by calling `WorktreeRemove` for the worktree path. If `WorktreeRemove` is not available in the current harness, fall back to calling `scripts/worktree-remove "$WORKTREE_DIR"` via Bash.
+Run:
 
-The `WorktreeRemove` event triggers the Section 2 hook (`hooks/worktree-remove.sh`), which removes the worktree directory and prunes stale refs.
+```
+git worktree remove --force "$WORKTREE_DIR" && git worktree prune
+```
 
 ### Step 8 — Confirm
 
