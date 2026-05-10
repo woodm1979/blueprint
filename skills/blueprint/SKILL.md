@@ -197,6 +197,17 @@ If **Yes**, build the issue body from the committed PRD using the template in **
 
 ### Step 10 — Handoff
 
+Before the handoff message, call `AskUserQuestion`:
+
+> Question: "Any domain terms surfaced during this session worth capturing? I can update (or create) `CONTEXT.md` at the repo root with a glossary of key terms."
+>
+> Options:
+> - `Yes — update CONTEXT.md` — add new terms to the glossary (create the file if absent).
+> - `No — skip` — proceed to handoff without touching CONTEXT.md.
+> - `Let's discuss`
+
+This offer is non-blocking: if the user declines, handoff proceeds normally. `CONTEXT.md` lives at the repo root; no path configuration is needed.
+
 End with exactly this message (substitute the real file paths):
 
 > **REQUIRED NEXT SKILL:** Run `/build` with the PLAN file below. Each section will run in a fresh subagent with 2-stage review.

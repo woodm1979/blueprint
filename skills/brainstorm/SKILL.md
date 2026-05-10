@@ -59,6 +59,10 @@ These rules apply to EVERY user-facing message during intake. Violating any of t
 
 ## Process
 
+### Step 0 — Load CONTEXT.md (if present)
+
+Before the interview begins, check whether `CONTEXT.md` exists at the repo root. If it exists, read it silently. Use the glossary it contains to challenge fuzzy or conflicting terms during the grill-me loop — do not recite the glossary to the user. If `CONTEXT.md` is absent, skip this step with no user-facing message. The file lives at the repo root; no path configuration is needed.
+
 ### Step 1 — Grill-me loop
 
 Interview the user relentlessly about every aspect of the feature or problem until shared understanding is reached. Walk down each branch of the decision tree, resolving dependencies between decisions one-by-one.
