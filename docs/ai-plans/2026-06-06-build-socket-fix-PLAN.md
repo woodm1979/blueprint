@@ -146,7 +146,7 @@ Invert the framing so foreground orchestration is the default/recommended path a
 
 ## Section 3: Section-sizing guidance + version bump
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** haiku
 **User stories covered:** 4
 
@@ -157,12 +157,12 @@ size to a bounded implementer dispatch, and bump the plugin version in both mani
 
 ### Acceptance criteria
 
-- [ ] `skills/blueprint/SKILL.md` Step 5 contains an advisory note: size sections so a
+- [x] `skills/blueprint/SKILL.md` Step 5 contains an advisory note: size sections so a
       single implementer finishes in a bounded dispatch (tens of minutes, not hours);
       long single-pass sections are the main source of `/build` socket drops; split them.
-- [ ] `.claude-plugin/plugin.json` version is bumped from `6.8.5` to `6.9.0`.
-- [ ] `.claude-plugin/marketplace.json` version is bumped from `6.8.5` to `6.9.0`.
-- [ ] Both version strings match exactly.
+- [x] `.claude-plugin/plugin.json` version is bumped from `6.8.5` to `6.9.0`.
+- [x] `.claude-plugin/marketplace.json` version is bumped from `6.8.5` to `6.9.0`.
+- [x] Both version strings match exactly.
 
 ### Notes for executor
 
@@ -172,7 +172,6 @@ size to a bounded implementer dispatch, and bump the plugin version in both mani
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 0cd02a6
+- Tests added: 0 (prose skill file + version strings; verified structurally by diff)
+- Deviations from plan: none
