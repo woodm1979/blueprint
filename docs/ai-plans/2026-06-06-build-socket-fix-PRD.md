@@ -101,3 +101,26 @@ plus a live run.
 ## Open questions
 
 - [ ] None — resolved during brainstorm.
+
+## Future Considerations
+
+- **End-to-end live smoke test.** The structural verification passed, but the PRD's
+  testing approach #3 (run `/build` on a fresh 2–3 section PLAN and confirm the longest
+  single dispatch is the implementer) has not been executed against the flattened
+  skills. Worth doing before relying on the fix in anger.
+- **Headless/afk confirmation.** afk-build.sh benefits for free via the unchanged signal
+  contract, but an actual unattended Docker run should confirm the flattened `/build-step`
+  behaves correctly headless.
+- **Cross-suite prose audit.** Now that `/build-step` is foreground-orchestrated, sweep
+  the rest of the suite (README, CLAUDE.md, other skills) for stale references to the old
+  nested wrapper-subagent / section-controller flow.
+- **Scripted reconcile helper.** The reconcile/resume rule is prose-only and relies on
+  model discipline. A small git+PLAN state-diff helper the orchestrator can call would
+  make recovery deterministic and testable.
+- **Residual implementer-length risk.** Even flattened, a single oversized section's
+  implementer can run long enough to drop. Sizing guidance is advisory; consider a
+  warning when a section's scope looks oversized at plan time.
+- **Distinct commit messages in `/build-step`.** The impl commit and the PLAN-update
+  commit can share the `build: complete Section N` message (seen on Section 3). Using
+  distinct messages (e.g. `chore:`/`docs:` for the PLAN update) would keep history
+  readable.
