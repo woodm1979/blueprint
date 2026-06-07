@@ -7,13 +7,13 @@ description: Execute all sections in a blueprint PLAN file by looping /build-ste
 
 ## Overview
 
-Executor of the blueprint suite. Given a `-PLAN.md` file produced by `/blueprint`, this skill runs each `[ ] not started` section in order by dispatching a subagent that invokes `blueprint:build-step`. Each subagent handles the full section lifecycle internally and returns a `SECTION_COMPLETE`, `ALL_SECTIONS_COMPLETE`, or `BLOCKED: <reason>` signal. The orchestrator reads the signal, updates the PLAN file, and continues to the next section.
+Executor of the blueprint suite. Given a `-PLAN.md` file produced by `/blueprint`, this skill runs each `[ ] not started` section in order by invoking `blueprint:build-step` in the foreground. `/build-step` handles the full section lifecycle (implementer dispatch, both reviews, optional remediation) and returns a `SECTION_COMPLETE`, `ALL_SECTIONS_COMPLETE`, or `BLOCKED: <reason>` signal. The orchestrator reads the signal and continues to the next section.
+
+The implementer and reviewers inside `/build-step` each run as fresh-context subagents — output quality is unaffected by foreground orchestration. For very long PLANs where foreground context accumulation is a concern, use `scripts/afk-build.sh` or the sandcastle runner, which call `/build-step` as a fresh process per section.
 
 **AFK use:** For unattended overnight runs, see `scripts/afk-build.sh`. It calls `/build-step` in a fresh Docker sandbox process per section, detects completion by grepping the PLAN file, and announces results via `/usr/bin/say`.
 
 The entire workflow is resumable across sessions: the PLAN file IS the state.
-
-If the Agent tool is unavailable in the current harness, a **no-subagent fallback mode** is provided (see "No-subagent fallback" below). The subagent path is the default and preferred mode — output quality is significantly higher with subagent dispatch.
 
 ## REQUIRED BACKGROUND
 
@@ -31,12 +31,9 @@ The `/build-step` skill enforces this discipline within each section's execution
 
 ### Controller hygiene
 
-Subagents dispatched via the `Agent` tool have no access to the controller's conversation history. That's automatic — you don't need to engineer it. Two things the controller should still watch:
+The orchestrator passes only the repo root and PLAN file path to `/build-step` — not commentary or reasoning. `/build-step` reads the PLAN file directly and the completion logs from prior sections are there. No need to restate deviations inline.
 
-1. **Don't embed your own reasoning in the subagent prompt.** Include the repo root and PLAN file path; exclude your commentary on them.
-2. **When a prior section deviated, the plan file's completion log already captures that.** The subagent will read it. No need to restate it inline.
-
-If the plan file is incomplete — a section's "What to build" can't actually be implemented from the plan + codebase alone — STOP execution, update the plan, and re-dispatch. Don't paper over plan gaps with private controller context.
+If the plan file is incomplete — a section's "What to build" can't actually be implemented from the plan + codebase alone — STOP execution, update the plan, and re-dispatch. Don't paper over plan gaps with private orchestrator context.
 
 ## Process
 
@@ -79,23 +76,22 @@ Grep the PLAN file for `**Status:** [ ] not started` (literal). The first match'
 
 If no match: announce "All sections complete" and stop.
 
-### Step 3 — Dispatch section subagent
+### Step 3 — Invoke `/build-step` in the foreground
 
-Dispatch a **sonnet** subagent with this prompt (fill in the actual repo root and PLAN file path):
+Invoke `blueprint:build-step` directly using the Skill tool:
 
 ```
-Use the Skill tool (skill: "blueprint:build-step") to execute the next section. Invoke it immediately without preamble — do not read files, explore the repo, or do anything else first.
-Repo root: <absolute-path-to-repo-root>
-PLAN file: <absolute-path-to-PLAN.md>
+skill: "blueprint:build-step"
+args: "repo_root=<absolute-path-to-repo-root> PLAN_file=<absolute-path-to-PLAN.md>"
 ```
 
-**Worktree note:** Subagents dispatched via the `Agent` tool do not inherit `EnterWorktree` context from the orchestrator. If a worktree was entered in Step 1, use the **worktree path** as `Repo root` (not the main repo root) and the worktree's copy of the PLAN file as `PLAN file`. This ensures all git operations in the subagent land on the feature branch.
+If a worktree was entered in Step 1, use the **worktree path** as `repo_root` (not the main repo root) and the worktree's copy of the PLAN file as `PLAN_file`. This ensures all git operations land on the feature branch.
 
-Use the `Agent` tool with `subagent_type: "general-purpose"`, model `sonnet`, and the prompt above.
+`/build-step` will run the full section lifecycle (capture pre-SHA, dispatch implementer, run both reviewers, handle remediation, update PLAN, commit) and output the completion signal as its final line.
 
 ### Step 3a — Read the completion signal
 
-Read the final line of the subagent's response for one of:
+Read the final line of the `/build-step` output for one of:
 
 - `SECTION_COMPLETE` → Proceed to Step 4.
 - `ALL_SECTIONS_COMPLETE` → Announce completion (Step 5) and stop.
@@ -112,10 +108,10 @@ Go back to Step 2 and select the next `[ ] not started` section.
 **Only stop the loop when:**
 
 1. No `[ ] not started` sections remain → announce completion and exit.
-2. Subagent returned `BLOCKED: <reason>` → surface to user and wait.
+2. `/build-step` returned `BLOCKED: <reason>` → surface to user and wait.
 3. The user interrupts the session.
 
-The orchestrator MAY emit a one-sentence summary between sections ("Section 2 complete, moving to Section 3") but this summary NEVER enters the next subagent's prompt.
+The orchestrator MAY emit a one-sentence summary between sections ("Section 2 complete, moving to Section 3").
 
 ### Step 6 — Completion announcement
 
@@ -160,30 +156,9 @@ Print exactly:
 
 **If no `Worktree:` field was present:** skip this step silently — backwards-compat preserved.
 
-## No-subagent fallback mode
-
-**When to use:** Only when the Agent tool is unavailable in the current harness (no subagent support). The subagent-driven path above is strictly preferred — quality is significantly higher with fresh-context subagents and independent reviewers. Tell your human partner that `/build` works much better with access to subagents, and if possible switch to a harness that supports them.
-
-**What changes:** The controller (you) invokes `/build-step` sequentially in the single session rather than dispatching it in a subagent. The PLAN state machine and section-level granularity are unchanged — you still run one section at a time, in order, and update the plan file between sections.
-
-**Process in fallback mode:**
-
-1. **Step 1–2 unchanged:** locate the PLAN file, bump `Last touched:`, commit `build: begin execution`, then grep for the next `**Status:** [ ] not started`.
-2. **Step 3 (sequential):** Instead of dispatching a subagent, invoke `blueprint:build-step` directly. `/build-step` will run the full section lifecycle and output `SECTION_COMPLETE`, `ALL_SECTIONS_COMPLETE`, or `BLOCKED: <reason>`.
-3. **Step 3a–6 unchanged:** read the completion signal and act accordingly.
-
-**Fallback-mode discipline:**
-
-- Never start implementation on `main` / `master` without explicit user consent.
-- The two manual checkpoints inside `/build-step` are not optional — they are the only quality gates in this mode.
-
 ## Model selection
 
-| Role | Default model | Why |
-|---|---|---|
-| Section subagent | `sonnet` | Loads `/build-step` and handles the full lifecycle. |
-
-The section-controller, implementer, and reviewer model assignments are governed by `/build-step`.
+The implementer, spec-compliance reviewer, code-quality reviewer, and remediation model assignments are governed by `/build-step`. The orchestrator (this skill) runs in the foreground and does not require a model selection of its own.
 
 ## Rationalization table
 
@@ -191,9 +166,9 @@ The section-controller, implementer, and reviewer model assignments are governed
 |---|---|
 | "The reviewer is just going to approve — I'll skip the dispatch" | Every section runs through `/build-step`. No shortcuts. |
 | "The user said 'run sections 2 and 3' — I'll skip picking next-unstarted and just go by that" | Grep for `[ ] not started` anyway. The user may have misremembered; the plan file is authoritative. |
-| "I'll mark the section complete even though the subagent returned BLOCKED" | If the signal is BLOCKED, surface it to the user. Do not update the PLAN file. |
-| "Let me batch sections into one subagent to save dispatches" | One subagent per section is the discipline — each section gets reviewed before the next begins. |
-| "The plan is ambiguous on a decision — I'll have the subagent just pick something" | No. The plan is the contract; ambiguity means the contract is incomplete. Pause, clarify with the user, edit the plan, commit, then dispatch. |
+| "I'll mark the section complete even though `/build-step` returned BLOCKED" | If the signal is BLOCKED, surface it to the user. Do not update the PLAN file. |
+| "Let me batch sections into one `/build-step` call to save time" | One section at a time is the discipline — each section gets reviewed before the next begins. |
+| "The plan is ambiguous on a decision — I'll have `/build-step` just pick something" | No. The plan is the contract; ambiguity means the contract is incomplete. Pause, clarify with the user, edit the plan, commit, then dispatch. |
 
 ## Red flags — STOP
 
@@ -202,9 +177,8 @@ The section-controller, implementer, and reviewer model assignments are governed
 - Plan-file update not committed before moving to next section
 - `Last touched:` not bumped
 - Progressing to next section while any acceptance criterion is still `- [ ]`
-- Subagent returned `BLOCKED` and orchestrator continues anyway
+- `/build-step` returned `BLOCKED` and orchestrator continues anyway
 - Starting implementation on `main` / `master` without explicit user consent
-- In no-subagent fallback mode: skipping `/build-step`'s quality gates or marking a section complete without a passing completion signal
 
 ## Resumption across sessions
 
