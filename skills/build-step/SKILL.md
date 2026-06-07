@@ -11,9 +11,11 @@ description: Execute one PLAN section via subagent chain. Outputs SECTION_COMPLE
 
 1. Discovers the PLAN file.
 2. Selects the next `[ ] not started` section.
-3. Dispatches a **section-controller** subagent that runs the full section lifecycle internally — implementer dispatch, both reviews, optional remediation — and returns a minimal structured result.
+3. Runs the full section lifecycle in the foreground — captures pre-section SHA, dispatches implementer, dispatches spec-compliance reviewer, dispatches code-quality reviewer, handles remediation if needed.
 4. On approval, updates the PLAN file (status, acceptance criteria boxes, completion log, `Last touched:`) and commits.
 5. Outputs exactly one of: `SECTION_COMPLETE`, `ALL_SECTIONS_COMPLETE`, or `BLOCKED: <reason>`.
+
+There is no nested section-controller subagent. `/build-step`'s own foreground is the section controller. The longest-lived child dispatch is a single implementer.
 
 This is the interface consumed by `/build`'s orchestrator and by `scripts/afk-build.sh`.
 
@@ -37,39 +39,6 @@ Grep the PLAN file for `**Status:** [ ] not started` (literal). The first match'
 
 If no match: output exactly `ALL_SECTIONS_COMPLETE` and stop.
 
-## Step 3 — Dispatch section-controller subagent
-
-Dispatch a **section-controller** subagent (model: `sonnet`) that runs the full section lifecycle internally — implementer dispatch, both reviews, optional remediation — and returns a minimal structured result. Diffs and subagent responses never enter the orchestrator's context.
-
-Construct the section-controller prompt from EXACTLY the template below:
-
-```
-You are a section-controller. You will orchestrate the full implementation lifecycle for Section <N>: <Title>. Dispatch an implementer subagent, run spec-compliance and code-quality reviews, handle remediation if needed, and return a structured result to the orchestrator. All workflow detail — diffs, subagent responses — stays in your context, not the orchestrator's.
-
-**CRITICAL: Use the Agent tool directly for every subagent dispatch. Do NOT use Bash, shell scripts, heredocs, or file I/O to construct or pass prompts. Pass the prompt text directly as a string to the Agent tool.**
-
-## Repo root
-<absolute-path-to-repo-root>
-
-## Plan file
-<absolute-path-to-PLAN.md>
-
-## Architectural decisions (binding — apply to ALL sections)
-<verbatim copy of the plan's "## Architectural decisions" block>
-
-## Section <N>: <Title>
-
-### What to build
-<verbatim copy>
-
-### Acceptance criteria
-<verbatim copy of the checkbox list>
-
-### Notes for executor
-<verbatim copy>
-
----
-
 ## Phase 1 — Capture pre-section SHA
 
 Run `git rev-parse HEAD` and store the result as `pre_sha`. Pass this to reviewers so they can scope their diffs.
@@ -78,7 +47,7 @@ Run `git rev-parse HEAD` and store the result as `pre_sha`. Pass this to reviewe
 
 Determine the implementer model from the section's `Model:` field (default `sonnet`).
 
-Dispatch a general-purpose subagent with the implementer's model. Use this prompt (fill in placeholders from the section content above):
+Dispatch a general-purpose subagent with the implementer's model. Use this prompt (fill in placeholders from the section content):
 
 ---IMPLEMENTER PROMPT START---
 You are implementing Section <N>: <Title> of a feature plan.
@@ -119,6 +88,7 @@ Before writing any code, invoke the Skill tool with skill name `blueprint:tdd` t
 - Focus on Section <N>. You MAY read the plan file for context (prior sections' completion logs and deviations are useful). You MAY grep the shipped codebase freely — that's the ground truth for interfaces earlier sections built.
 - Do NOT pre-build anything for sections that haven't started. Implementing them now is YAGNI. Add only what this section's acceptance criteria require.
 - If the plan is ambiguous or a decision isn't captured in the Architectural decisions block, stop and report back — do NOT fill the gap on your own.
+- **Foreground-wait discipline:** Do not start a build or test run in a background task and end the turn. Run all builds and tests in the foreground and wait for completion before reporting. If a build or test is long-running, poll it to completion — do not hand it off to the background.
 
 ## Code organization
 
@@ -158,8 +128,9 @@ Fix issues now before reporting.
 
 - **DONE:** Proceed to Phase 3.
 - **DONE_WITH_CONCERNS:** Read the concerns. Address correctness/scope concerns before review; note observation-only concerns for the final result. Proceed to Phase 3.
-- **NEEDS_CONTEXT:** Provide missing context and re-dispatch. If the gap is cross-section, return `status: NEEDS_USER_INPUT` with the gap described.
-- **BLOCKED:** Context problem → re-dispatch with more context; needs more reasoning → re-dispatch with more capable model; section too large or plan wrong → return `status: BLOCKED`. Never re-dispatch unchanged.
+- **NEEDS_CONTEXT:** Provide missing context and re-dispatch. If the gap is cross-section, surface it to the user and stop with `BLOCKED: <gap description>`.
+- **BLOCKED:** Context problem → re-dispatch with more context; needs more reasoning → re-dispatch with more capable model; section too large or plan wrong → stop with `BLOCKED: <reason>`. Never re-dispatch unchanged.
+- **API/socket error or no structured result:** Reconcile before any re-dispatch — run `git log --oneline <pre_sha>..HEAD` and `git status`, compare against the acceptance criteria, determine what was actually completed, then re-dispatch only the remaining work. Never blind-retry an unchanged prompt.
 
 ## Phase 3 — Dispatch spec-compliance reviewer (opus)
 
@@ -257,42 +228,16 @@ Dispatch a fresh general-purpose subagent (same model as implementer). Pass:
 
 Instruction: fix the listed items only; do not introduce changes beyond the list; re-run tests; commit.
 
-Re-dispatch the rejecting reviewer after remediation. If both reviewers eventually `APPROVED`, proceed to Phase 6. If the same reviewer rejects twice, return `status: BLOCKED`.
+Re-dispatch the rejecting reviewer after remediation. If both reviewers eventually `APPROVED`, proceed to Phase 6. If the same reviewer rejects twice, stop with `BLOCKED: <reviewer rejection summary>`.
 
-## Phase 6 — Return structured result
+## Phase 6 — Handle approval result
 
-Your final response to the orchestrator MUST consist ONLY of this block. Do not add preamble, explanation, or prose before or after it.
+When both reviewers return `APPROVED`, record:
+- All commit SHAs since `pre_sha` (from `git log --oneline <pre_sha>..HEAD`)
+- Test count from implementer's report
+- Any deviations or concerns noted
 
-If approved:
-
-===RESULT===
-status: APPROVED
-section: <N>
-title: <Title>
-commits: <sha1> <sha2> ...
-tests_added: <count>
-deviations: <none | one-line description>
-concerns: <none | one-line description>
-===END===
-
-If blocked or requiring user intervention:
-
-===RESULT===
-status: BLOCKED | NEEDS_USER_INPUT
-section: <N>
-title: <Title>
-blocker: <one-line description>
-===END===
-```
-
-Use the `Agent` tool with `subagent_type: "general-purpose"`, model `sonnet`, and the prompt above.
-
-## Step 3a — Handle section-controller result
-
-Read the `===RESULT===` block from the section-controller's response.
-
-- **APPROVED:** Proceed to Step 4.
-- **BLOCKED / NEEDS_USER_INPUT:** Surface the `blocker` line to the user, then output `BLOCKED: <blocker>` as the final line and stop. Do not update the PLAN file.
+Proceed to Step 4.
 
 ## Step 4 — Update the plan file
 
@@ -316,7 +261,6 @@ Output exactly `SECTION_COMPLETE` as the final line and stop.
 
 | Role | Default model | Why |
 |---|---|---|
-| Section-controller | `sonnet` | Orchestration: dispatches sub-agents, parses structured results. |
 | Implementer | from section's `Model:` field; default `sonnet` | Section complexity varies; plan-author picks. |
 | Spec-compliance reviewer | `opus` | Rigorous fit-to-spec analysis. |
 | Code-quality reviewer | `opus` | Best judgment on craft and subtle pitfalls. |
@@ -338,3 +282,4 @@ Use the least powerful model that can handle each role to conserve cost and incr
 | "The plan is ambiguous on a decision — I'll have the implementer just pick something" | No. The plan is the contract; ambiguity means the contract is incomplete. Pause, clarify with the user, edit the plan, commit, then dispatch. |
 | "The implementer reported DONE — the spec reviewer can skim the report instead of reading code" | No. The reviewer verifies by reading code, not by trusting the report. Optimistic reports are a known failure mode. |
 | "The implementer returned BLOCKED — I'll just re-dispatch with the same prompt" | Something needs to change. More context, a more capable model, or a smaller scope. Re-dispatching unchanged is just burning tokens. |
+| "The child dispatch returned a socket error — I'll just retry the same call" | Never blind-retry. Run `git log --oneline <pre_sha>..HEAD` + `git status` first. Determine what was actually done, then re-dispatch only the remaining work. |
