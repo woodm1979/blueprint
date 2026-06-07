@@ -42,7 +42,7 @@
 
 ## Section 1: Flatten `/build-step` to foreground orchestration
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** opus
 **User stories covered:** 2, 3
 
@@ -56,24 +56,24 @@ to the implementer prompt. Preserve the exact output-signal contract.
 
 ### Acceptance criteria
 
-- [ ] `skills/build-step/SKILL.md` contains no dispatch of a "section-controller"
+- [x] `skills/build-step/SKILL.md` contains no dispatch of a "section-controller"
       subagent; grep for `section-controller` finds only prose that describes the
       foreground role, not an `Agent`/subagent dispatch of one.
-- [ ] The lifecycle phases (capture pre-section SHA, dispatch implementer, handle
+- [x] The lifecycle phases (capture pre-section SHA, dispatch implementer, handle
       implementer status, dispatch spec-compliance reviewer, dispatch code-quality
       reviewer, remediation) are each described as a separate `Agent` dispatch made by
       `/build-step`'s own foreground.
-- [ ] The implementer, spec-reviewer, quality-reviewer, and remediation prompt bodies
+- [x] The implementer, spec-reviewer, quality-reviewer, and remediation prompt bodies
       are preserved (same review rigor: reviewers fetch their own diff; reviewers run on
       `opus`; implementer model comes from the section's `Model:` field).
-- [ ] The implementer prompt includes a discipline rule: do not start a build/test in a
+- [x] The implementer prompt includes a discipline rule: do not start a build/test in a
       background task and end the turn — run builds/tests in the foreground and wait for
       completion before reporting; poll long builds to completion.
-- [ ] A reconcile/resume rule is present: any child dispatch returning an API/socket
+- [x] A reconcile/resume rule is present: any child dispatch returning an API/socket
       error or no structured result triggers `git log --oneline <pre_sha>..HEAD` +
       `git status` reconciliation against the acceptance criteria before any
       re-dispatch; never re-dispatch unchanged or blind-retry.
-- [ ] `/build-step` still ends with exactly one of `SECTION_COMPLETE`,
+- [x] `/build-step` still ends with exactly one of `SECTION_COMPLETE`,
       `ALL_SECTIONS_COMPLETE`, or `BLOCKED: <reason>` as its final line, and still
       updates + commits the PLAN file on approval (`build: complete Section <N>`).
 
@@ -91,10 +91,9 @@ to the implementer prompt. Preserve the exact output-signal contract.
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: bfb9894
+- Tests added: 0 (prose skill file; verified structurally by reading and grepping)
+- Deviations from plan: none
 
 ---
 
