@@ -107,6 +107,8 @@ For each section in the proposal, show:
 
 Iterate with the user until the breakdown is approved. If a section feels too big ("two features smooshed"), split it. If two sections are tiny and trivially related, merge them.
 
+**Section-sizing advisory.** Size each section so a single implementer can finish it in a bounded dispatch — tens of minutes, not hours. Long single-pass sections are the main source of `/build` socket drops; when in doubt, split.
+
 **Writing acceptance criteria — coaching note.** Strong criteria let the executor loop independently. Write criteria that are testable from the outside: observable behaviors, not internal implementation choices. "User can log in with email+password and receives a session cookie" is a criterion. "Uses bcrypt for password hashing" is not. Good criteria survive refactoring; implementation-detail criteria don't.
 
 ### Step 6 — Write / update PLAN
