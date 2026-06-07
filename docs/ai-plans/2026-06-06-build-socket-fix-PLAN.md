@@ -99,7 +99,7 @@ to the implementer prompt. Preserve the exact output-signal contract.
 
 ## Section 2: Run `/build-step` in foreground from `/build`
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** sonnet
 **User stories covered:** 1
 
@@ -112,15 +112,15 @@ Invert the framing so foreground orchestration is the default/recommended path a
 
 ### Acceptance criteria
 
-- [ ] `/build` Step 3 invokes the `blueprint:build-step` skill in the foreground; it no
+- [x] `/build` Step 3 invokes the `blueprint:build-step` skill in the foreground; it no
       longer dispatches a subagent whose only job is to run `/build-step`.
-- [ ] The loop control (read signal → verify PLAN updated → continue / stop on
+- [x] The loop control (read signal → verify PLAN updated → continue / stop on
       `BLOCKED` / stop on all-complete) is preserved.
-- [ ] The "No-subagent fallback mode" section and any "subagent mode is preferred /
+- [x] The "No-subagent fallback mode" section and any "subagent mode is preferred /
       higher quality" framing are removed or rewritten so foreground orchestration is
       the default; grep for "no-subagent fallback" and "subagent mode" finds no stale
       claims that the wrapper subagent is preferred.
-- [ ] The skill notes that implementer + reviewers remain fresh-context subagents (so
+- [x] The skill notes that implementer + reviewers remain fresh-context subagents (so
       output quality is unaffected — only orchestration bookkeeping moved to the
       foreground), and that for very long PLANs the afk/sandcastle process-per-section
       runners are the answer to foreground context accumulation.
@@ -138,10 +138,9 @@ Invert the framing so foreground orchestration is the default/recommended path a
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: 78c0d97
+- Tests added: 0 (prose skill file; verified structurally by reading and grepping)
+- Deviations from plan: none
 
 ---
 
