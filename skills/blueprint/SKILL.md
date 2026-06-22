@@ -103,9 +103,30 @@ For each section in the proposal, show:
 
 - **Title** — short imperative noun phrase.
 - **User stories covered** — which story numbers from the PRD.
-- **Suggested `Model:`** — `haiku` if mechanical (1–2 files, clear spec), `sonnet` if integration/judgment, `opus` if architectural. Default when in doubt: `sonnet`.
+- **Suggested `Model:`** — chosen per the **Model selection** rules below. Default: `sonnet`.
 
 Iterate with the user until the breakdown is approved. If a section feels too big ("two features smooshed"), split it. If two sections are tiny and trivially related, merge them.
+
+### Model selection
+
+This is the one canonical place these rules live. The `Model:` field you write into each section here is read verbatim by `/build-step` at execution time — it never re-decides.
+
+**Default is `sonnet`.** Choosing anything else requires a positive reason that matches a rule below. When torn between two tiers, pick the **higher** one: a wrong-low pick fails review and triggers a remediation round, which costs far more than the tokens it tried to save.
+
+**Up-level to `opus`** when the section touches any of:
+- a new architectural boundary, public API/interface, or schema other code depends on
+- security, auth, or permissions
+- concurrency, transactions, migrations, or anything touching cross-module invariants
+- correctness-critical logic where a plausible-looking wrong answer is dangerous
+
+**Down-level to `haiku`** only when **ALL** of these hold (a strict gate, not a preference):
+- zero design judgment — fully determined by the spec, no choices to make
+- no cross-layer wiring — it doesn't thread a new behavior through schema→API→UI
+- deterministic transcription — e.g. version bump, add an enum value, rename per a given mapping, copy a documented config
+
+Step 5 sections are vertical slices that cut through multiple layers, so they almost never satisfy the haiku gate. Treat a `haiku` section as a flag to re-check, not a default. (There is no file-count rule — a slice spanning many files can still be pure `sonnet` work, and a one-file change can still demand `opus`.)
+
+Everything else is `sonnet`.
 
 **Section-sizing advisory.** Size each section so a single implementer can finish it in a bounded dispatch — tens of minutes, not hours. Long single-pass sections are the main source of `/build` socket drops; when in doubt, split.
 
@@ -157,7 +178,7 @@ This is a checklist YOU run yourself — not a subagent dispatch. Scan both file
 2. **Placeholder scan.** Any `TBD`, `TODO`, `implement later`, `fill in details`, "add appropriate error handling", "similar to Section N"? Fix them.
 3. **Type consistency.** Do module names, route paths, schema shapes referenced in later sections match what you set in earlier sections and in the PRD architecture sketch? Inconsistencies are bugs.
 4. **Vertical-slice check.** For each section, apply this pass/fail test: "Is each section demoable on its own without depending on a subsequent section?" PASS = the section delivers a thin end-to-end behavior you can show a user. FAIL = the section is a horizontal layer (all-schema-first, then all-API, then all-UI). If any section fails, restructure into verticals.
-5. **Model coherence.** Is the `Model:` field appropriate to each section's complexity? An `opus` section that's just "rename a function" or a `haiku` section that's "design a new auth boundary" is a smell.
+5. **Model coherence.** Challenge every non-`sonnet` section against the **Model selection** rules. For each `haiku`: does it satisfy ALL three gate conditions? If a competent engineer could make a wrong choice while implementing it, it's not `haiku` — promote to `sonnet`. For each `opus`: does it match a listed trigger, or is it really routine integration work?
 6. **Acceptance-criteria externality.** Are criteria observable from the outside, or do they bake in internal implementation choices? Rewrite any that aren't externally testable.
 7. **(Extension only) Append-not-fork.** Confirm no new files were created when extending.
 
@@ -289,7 +310,7 @@ The fenced block is the exact command the user can copy-paste after a `/clear`. 
 - TDD per section (test → impl → commit)
 - Minimum one commit per completed section
 - Review checkpoint between sections (spec compliance + code quality)
-- Default implementer model: `sonnet`
+- Default implementer model: `sonnet` (per-section overrides follow the Model selection rules in `/blueprint`)
 
 ---
 
