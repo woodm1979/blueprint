@@ -261,12 +261,12 @@ Output exactly `SECTION_COMPLETE` as the final line and stop.
 
 | Role | Default model | Why |
 |---|---|---|
-| Implementer | from section's `Model:` field; default `sonnet` | Section complexity varies; plan-author picks. |
+| Implementer | from section's `Model:` field; default `sonnet` | Set per the Model selection rules in `/blueprint`; this skill reads the field, never re-decides. |
 | Spec-compliance reviewer | `opus` | Rigorous fit-to-spec analysis. |
 | Code-quality reviewer | `opus` | Best judgment on craft and subtle pitfalls. |
 | Remediation implementer | same as original implementer | Match the section's complexity. |
 
-Use the least powerful model that can handle each role to conserve cost and increase speed — but do not downgrade reviewers below `opus`.
+Reviewers are always `opus` — never downgrade them. The implementer model is fixed at plan time per the Model selection rules in `/blueprint` (default `sonnet`, tie-break upward); this skill does not second-guess or downgrade it to save cost.
 
 ## Rationalization table
 
