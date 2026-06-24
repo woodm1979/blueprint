@@ -93,7 +93,7 @@ cleanup() {
   cleanup "$repo"
 }
 
-# --- Test 3: Symlinks gitignored .env* files ---
+# --- Test 3: Copies gitignored .env* files into the worktree ---
 {
   repo=$(setup_repo)
   echo ".env" >> "$repo/.gitignore"
@@ -107,10 +107,10 @@ cleanup() {
 
   bash "$SCRIPT" "$repo" "env-test" >/dev/null 2>&1
 
-  if [[ -L "$wt/.env" ]]; then
-    pass ".env symlinked into worktree"
+  if [[ -f "$wt/.env" && ! -L "$wt/.env" && "$(cat "$wt/.env")" == "secret" ]]; then
+    pass ".env copied into worktree (isolated, not symlinked)"
   else
-    fail ".env symlinked into worktree"
+    fail ".env copied into worktree (isolated, not symlinked)"
   fi
 
   cleanup "$repo"
@@ -138,18 +138,19 @@ cleanup() {
   cleanup "$repo"
 }
 
-# --- Test 5: Override script runs exclusively ---
+# --- Test 5: Repo .worktree-setup override owns dependency setup ---
 {
   repo=$(setup_repo)
-  mkdir -p "$repo/.claude"
-  override_log=$(mktemp)
-  cat > "$repo/.claude/worktree-setup.sh" <<'EOF'
+  # Committed, executable override — checked out into the worktree and run from it.
+  cat > "$repo/.worktree-setup" <<'EOF'
 #!/usr/bin/env bash
-echo "override ran: WORKTREE_DIR=$WORKTREE_DIR REPO_ROOT=$REPO_ROOT" >> "$OVERRIDE_LOG"
+echo "ran" > setup-ran
 EOF
-  chmod +x "$repo/.claude/worktree-setup.sh"
+  chmod +x "$repo/.worktree-setup"
+  git -C "$repo" add .worktree-setup
+  git -C "$repo" commit -q -m "add worktree-setup override"
 
-  # Also put a .env to verify auto-detection does NOT symlink it
+  # .env is still copied — the override only replaces dependency installation.
   echo ".env" >> "$repo/.gitignore"
   echo "secret" > "$repo/.env"
   git -C "$repo" add .gitignore
@@ -159,28 +160,20 @@ EOF
   base="$(basename "$repo")"
   wt="$parent/${base}-worktrees/override-test"
 
-  OVERRIDE_LOG="$override_log" bash "$SCRIPT" "$repo" "override-test" >/dev/null 2>&1
+  bash "$SCRIPT" "$repo" "override-test" >/dev/null 2>&1
 
-  if grep -q "override ran:" "$override_log" 2>/dev/null; then
-    pass "override script ran"
+  if [[ -f "$wt/setup-ran" ]]; then
+    pass ".worktree-setup override ran inside the worktree"
   else
-    fail "override script ran"
+    fail ".worktree-setup override ran inside the worktree"
   fi
 
-  if grep -q "WORKTREE_DIR=" "$override_log" && grep -q "REPO_ROOT=" "$override_log"; then
-    pass "override script received WORKTREE_DIR and REPO_ROOT env vars"
+  if [[ -f "$wt/.env" && ! -L "$wt/.env" ]]; then
+    pass "override still copies .env (override replaces only dependency setup)"
   else
-    fail "override script received WORKTREE_DIR and REPO_ROOT env vars"
+    fail "override still copies .env (override replaces only dependency setup)"
   fi
 
-  # .env should NOT be symlinked (no auto-detection)
-  if [[ ! -L "$wt/.env" ]]; then
-    pass "override script: no auto-detection side effects (.env not symlinked)"
-  else
-    fail "override script: no auto-detection side effects (.env not symlinked)"
-  fi
-
-  rm -f "$override_log"
   cleanup "$repo"
 }
 
