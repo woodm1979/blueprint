@@ -1,42 +1,46 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="${1:?Usage: worktree-create <repo-root> <branch-name>}"
-BRANCH="${2:?Usage: worktree-create <repo-root> <branch-name>}"
+REPO_ROOT="${1:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>]}"
+BRANCH="${2:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>]}"
 WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH"
+BASE="${3:-}"
 
-trap 'echo "Setup failed, removing worktree..." >&2; git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
-
-_add_worktree() {
-  git -C "$REPO_ROOT" worktree prune >&2
-  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-    echo "Branch '$BRANCH' already exists, checking it out..." >&2
-    git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH" >&2
-  else
-    echo "Creating new branch '$BRANCH'..." >&2
-    git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" >&2
-  fi
+# Copy a directory cheaply: APFS copy-on-write clone (instant, isolated on
+# write), falling back to hard-links on filesystems without clonefile.
+clone_dir() {
+  local src="$1" dst="$2"
+  cp -c -R "$src" "$dst" 2>/dev/null || cp -Rl "$src" "$dst"
 }
 
-# Override script contract: if .claude/worktree-setup.sh exists, run it exclusively.
-# The script receives WORKTREE_DIR and REPO_ROOT as env vars.
-if [[ -f "$REPO_ROOT/.claude/worktree-setup.sh" ]]; then
-  echo "Running override script .claude/worktree-setup.sh..." >&2
-  _add_worktree
-  WORKTREE_DIR="$WORKTREE_DIR" REPO_ROOT="$REPO_ROOT" bash "$REPO_ROOT/.claude/worktree-setup.sh" >&2
-  echo "Worktree ready: $WORKTREE_DIR" >&2
-  echo "$WORKTREE_DIR"
-  exit 0
+if [[ -e "$WORKTREE_DIR" ]]; then
+  echo "Error: '$WORKTREE_DIR' already exists — refusing to clobber. Remove it first (worktree-remove)." >&2
+  exit 1
 fi
 
-_add_worktree
+git -C "$REPO_ROOT" worktree prune >&2
+
+if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+  echo "Branch '$BRANCH' already exists, checking it out..." >&2
+  git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+elif git -C "$REPO_ROOT" show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+  echo "Tracking existing origin/$BRANCH..." >&2
+  git -C "$REPO_ROOT" worktree add --track -b "$BRANCH" "$WORKTREE_DIR" "origin/$BRANCH" >&2
+else
+  echo "Creating new branch '$BRANCH'${BASE:+ from $BASE}..." >&2
+  git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" ${BASE:+"$BASE"} >&2
+fi
+
+# Worktree now exists — arm cleanup so a later setup failure removes only
+# what this run created (never a pre-existing worktree).
+trap 'echo "Setup failed, removing worktree..." >&2; git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
 
 for env_file in "$REPO_ROOT"/.env*; do
   [[ -f "$env_file" ]] || continue
   filename=$(basename "$env_file")
   if git -C "$REPO_ROOT" check-ignore -q "$env_file" 2>/dev/null; then
-    ln -sf "$env_file" "$WORKTREE_DIR/$filename"
-    echo "Symlinked $filename" >&2
+    cp "$env_file" "$WORKTREE_DIR/$filename"
+    echo "Copied $filename" >&2
   fi
 done
 
@@ -50,60 +54,84 @@ if [[ -d "$REPO_ROOT/.claude" ]]; then
     echo "Symlinked $rel_path" >&2
   done < <(
     comm -23 \
-      <(find "$REPO_ROOT/.claude" -type f | sed "s|$REPO_ROOT/||" | sort) \
+      <(find "$REPO_ROOT/.claude" -type f -not -path "$REPO_ROOT/.claude/worktrees/*" | sed "s|$REPO_ROOT/||" | sort) \
       <(git -C "$REPO_ROOT" ls-files .claude/ | sort)
   )
 fi
 
-if [[ -f "$REPO_ROOT/mix.exs" ]]; then
-  if [[ -d "$REPO_ROOT/deps" ]]; then
-    echo "Hard-linking deps/..." >&2
-    if cp -Rl "$REPO_ROOT/deps" "$WORKTREE_DIR/deps" 2>/dev/null; then
-      echo "Hard-linked deps/" >&2
+# Repo-local override: if present, it owns dependency/build setup entirely.
+if [[ -x "$WORKTREE_DIR/.worktree-setup" ]]; then
+  echo "Running repo .worktree-setup..." >&2
+  (cd "$WORKTREE_DIR" && ./.worktree-setup >&2)
+else
+  if [[ -f "$REPO_ROOT/mix.exs" ]]; then
+    if [[ -d "$REPO_ROOT/deps" ]]; then
+      echo "Cloning deps/..." >&2
+      clone_dir "$REPO_ROOT/deps" "$WORKTREE_DIR/deps"
+    fi
+    echo "Running mix deps.get..." >&2
+    (cd "$WORKTREE_DIR" && mix deps.get >&2)
+  fi
+
+  if [[ -f "$REPO_ROOT/package.json" ]]; then
+    if [[ -d "$REPO_ROOT/node_modules" ]]; then
+      echo "Cloning node_modules/..." >&2
+      clone_dir "$REPO_ROOT/node_modules" "$WORKTREE_DIR/node_modules"
+    fi
+    if [[ -f "$REPO_ROOT/pnpm-lock.yaml" ]]; then
+      (cd "$WORKTREE_DIR" && pnpm install >&2)
+    elif [[ -f "$REPO_ROOT/yarn.lock" ]]; then
+      (cd "$WORKTREE_DIR" && yarn install >&2)
     else
-      echo "Warning: hard-link failed (different filesystem?), falling back to cp -r" >&2
-      cp -r "$REPO_ROOT/deps" "$WORKTREE_DIR/deps"
+      (cd "$WORKTREE_DIR" && npm install >&2)
     fi
   fi
-  echo "Running mix deps.get..." >&2
-  (cd "$WORKTREE_DIR" && mix deps.get >&2)
-fi
 
-if [[ -f "$REPO_ROOT/package.json" ]]; then
-  if [[ -d "$REPO_ROOT/node_modules" ]]; then
-    echo "Hard-linking node_modules/..." >&2
-    if cp -Rl "$REPO_ROOT/node_modules" "$WORKTREE_DIR/node_modules" 2>/dev/null; then
-      echo "Hard-linked node_modules/" >&2
+  if [[ -f "$REPO_ROOT/pyproject.toml" ]]; then
+    if command -v uv &>/dev/null; then
+      (cd "$WORKTREE_DIR" && uv sync >&2)
     else
-      echo "Warning: hard-link failed (different filesystem?), falling back to cp -r" >&2
-      cp -r "$REPO_ROOT/node_modules" "$WORKTREE_DIR/node_modules"
+      echo "Warning: pyproject.toml found but uv not installed — skipping Python deps" >&2
+    fi
+  elif [[ -f "$REPO_ROOT/requirements.txt" ]]; then
+    (cd "$WORKTREE_DIR" && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt >&2)
+  fi
+
+  if [[ -f "$REPO_ROOT/Cargo.toml" ]]; then
+    (cd "$WORKTREE_DIR" && cargo fetch >&2)
+  fi
+
+  if [[ -f "$REPO_ROOT/go.mod" ]]; then
+    (cd "$WORKTREE_DIR" && go mod download >&2)
+  fi
+
+  # Per-directory init: tools that key off path treat the worktree as new/untrusted.
+  # Non-fatal — a missing optional tool must not trigger the ERR trap.
+  if [[ -f "$WORKTREE_DIR/.mise.toml" || -f "$WORKTREE_DIR/.tool-versions" ]] && command -v mise &>/dev/null; then
+    (cd "$WORKTREE_DIR" && mise trust && mise install) >&2 || echo "Warning: mise setup failed" >&2
+  fi
+
+  if [[ -f "$WORKTREE_DIR/.envrc" ]] && command -v direnv &>/dev/null; then
+    (cd "$WORKTREE_DIR" && direnv allow) >&2 || echo "Warning: direnv allow failed" >&2
+  fi
+
+  if [[ -f "$WORKTREE_DIR/.gitmodules" ]]; then
+    git -C "$WORKTREE_DIR" submodule update --init --recursive >&2 || echo "Warning: submodule init failed" >&2
+  fi
+
+  if [[ -f "$WORKTREE_DIR/.gitattributes" ]] && grep -q 'filter=lfs' "$WORKTREE_DIR/.gitattributes" && command -v git-lfs &>/dev/null; then
+    git -C "$WORKTREE_DIR" lfs pull >&2 || echo "Warning: git lfs pull failed" >&2
+  fi
+
+  if [[ -f "$WORKTREE_DIR/.pre-commit-config.yaml" ]] && command -v pre-commit &>/dev/null; then
+    (cd "$WORKTREE_DIR" && pre-commit install) >&2 || echo "Warning: pre-commit install failed" >&2
+  fi
+
+  if compgen -G "$WORKTREE_DIR/lefthook.y*ml" >/dev/null 2>&1 || compgen -G "$WORKTREE_DIR/.lefthook.y*ml" >/dev/null 2>&1 || [[ -f "$WORKTREE_DIR/lefthook.toml" ]]; then
+    if command -v lefthook &>/dev/null; then
+      (cd "$WORKTREE_DIR" && lefthook install) >&2 || echo "Warning: lefthook install failed" >&2
     fi
   fi
-  if [[ -f "$REPO_ROOT/pnpm-lock.yaml" ]]; then
-    (cd "$WORKTREE_DIR" && pnpm install >&2)
-  elif [[ -f "$REPO_ROOT/yarn.lock" ]]; then
-    (cd "$WORKTREE_DIR" && yarn install >&2)
-  else
-    (cd "$WORKTREE_DIR" && npm install >&2)
-  fi
-fi
-
-if [[ -f "$REPO_ROOT/pyproject.toml" ]]; then
-  if command -v uv &>/dev/null; then
-    (cd "$WORKTREE_DIR" && uv sync >&2)
-  else
-    echo "Warning: pyproject.toml found but uv not installed — skipping Python deps" >&2
-  fi
-elif [[ -f "$REPO_ROOT/requirements.txt" ]]; then
-  (cd "$WORKTREE_DIR" && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt >&2)
-fi
-
-if [[ -f "$REPO_ROOT/Cargo.toml" ]]; then
-  (cd "$WORKTREE_DIR" && cargo fetch >&2)
-fi
-
-if [[ -f "$REPO_ROOT/go.mod" ]]; then
-  (cd "$WORKTREE_DIR" && go mod download >&2)
 fi
 
 echo "Worktree ready: $WORKTREE_DIR" >&2
