@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Manage the trust allowlist for repo-shipped worktree lifecycle hooks
+# (.worktree/post_create, .worktree/pre_delete). direnv-style: a hook is inert
+# until allowed, and re-trusting is required whenever its content changes.
+set -euo pipefail
+
+. "$(dirname "$0")/worktree-lib.sh"
+
+usage() {
+  cat >&2 <<EOF
+Usage: worktree-trust <command> [<file>]
+
+  allow <file>   Trust the current content of <file>.
+  deny  <file>   Remove <file>'s current content from the allowlist.
+  check <file>   Exit 0 if trusted, 1 if not (no output).
+  list           Print the allowlist (one content hash per line).
+
+Allowlist: $WORKTREE_TRUST_STORE
+EOF
+  exit 2
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  allow)
+    file="${2:?Usage: worktree-trust allow <file>}"
+    [[ -f "$file" ]] || { echo "Error: no such file: $file" >&2; exit 1; }
+    trust_allow "$file"
+    echo "Trusted: $file" >&2
+    ;;
+  deny)
+    file="${2:?Usage: worktree-trust deny <file>}"
+    [[ -f "$file" ]] || { echo "Error: no such file: $file" >&2; exit 1; }
+    trust_deny "$file"
+    echo "Untrusted: $file" >&2
+    ;;
+  check)
+    file="${2:?Usage: worktree-trust check <file>}"
+    trust_check "$file"
+    ;;
+  list)
+    [[ -f "$WORKTREE_TRUST_STORE" ]] && cat "$WORKTREE_TRUST_STORE" || true
+    ;;
+  *)
+    usage
+    ;;
+esac

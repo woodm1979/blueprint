@@ -3,8 +3,22 @@ set -euo pipefail
 
 REPO_ROOT="${1:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>]}"
 BRANCH="${2:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>]}"
-WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH"
 BASE="${3:-}"
+
+. "$(dirname "$0")/worktree-lib.sh"
+
+# Concern 1 — Creation. Detect bare-vs-standard once, up front, then pick the
+# tool-owned default path for that layout.
+detect_layout "$REPO_ROOT"
+if [[ "$WT_LAYOUT" == bare ]]; then
+  # Bare: sibling of .bare inside the container, dir name = canonical slug.
+  WORKTREE_DIR="$WT_CONTAINER/$(slugify "$BRANCH")"
+  INCLUDE_SOURCE="$WT_CONTAINER"
+else
+  # Standard: <parent>/<repo>-worktrees/<branch> (historical default).
+  WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH"
+  INCLUDE_SOURCE="$REPO_ROOT"
+fi
 
 # Copy a directory cheaply: APFS copy-on-write clone (instant, isolated on
 # write), falling back to hard-links on filesystems without clonefile.
@@ -35,34 +49,87 @@ fi
 # what this run created (never a pre-existing worktree).
 trap 'echo "Setup failed, removing worktree..." >&2; git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
 
-for env_file in "$REPO_ROOT"/.env*; do
-  [[ -f "$env_file" ]] || continue
-  filename=$(basename "$env_file")
-  if git -C "$REPO_ROOT" check-ignore -q "$env_file" 2>/dev/null; then
-    cp "$env_file" "$WORKTREE_DIR/$filename"
-    echo "Copied $filename" >&2
-  fi
-done
+# Concern 2 — File-bringing. A repo-root .worktreeinclude (gitignore syntax) is
+# authoritative when present: each line is a gitignored/shared path to bring in.
+# Default action is copy; a leading '&' marks symlink (to the canonical source).
+# Source base is the container for bare layouts, the repo root for standard.
+if [[ -f "$REPO_ROOT/.worktreeinclude" ]]; then
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Strip surrounding whitespace; skip blanks and comments.
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
 
-if [[ -d "$REPO_ROOT/.claude" ]]; then
-  while IFS= read -r rel_path; do
-    [[ -z "$rel_path" ]] && continue
-    src="$REPO_ROOT/$rel_path"
-    target="$WORKTREE_DIR/$rel_path"
-    mkdir -p "$(dirname "$target")"
-    ln -sf "$src" "$target"
-    echo "Symlinked $rel_path" >&2
-  done < <(
-    comm -23 \
-      <(find "$REPO_ROOT/.claude" -type f -not -path "$REPO_ROOT/.claude/worktrees/*" | sed "s|$REPO_ROOT/||" | sort) \
-      <(git -C "$REPO_ROOT" ls-files .claude/ | sort)
-  )
+    mode=copy
+    if [[ "$line" == \&* ]]; then
+      mode=symlink
+      line="${line#&}"
+      line="${line#"${line%%[![:space:]]*}"}"
+    fi
+
+    src="$INCLUDE_SOURCE/$line"
+    dst="$WORKTREE_DIR/$line"
+    if [[ ! -e "$src" ]]; then
+      echo "Warning: .worktreeinclude entry not found, skipping: $line" >&2
+      continue
+    fi
+    mkdir -p "$(dirname "$dst")"
+    if [[ "$mode" == symlink ]]; then
+      ln -sf "$src" "$dst"
+      echo "Symlinked $line" >&2
+    else
+      cp -R "$src" "$dst"
+      echo "Copied $line" >&2
+    fi
+  done < "$REPO_ROOT/.worktreeinclude"
+else
+  # Fallback (no .worktreeinclude): historical behavior — copy gitignored .env*,
+  # symlink untracked .claude/ files.
+  for env_file in "$REPO_ROOT"/.env*; do
+    [[ -f "$env_file" ]] || continue
+    filename=$(basename "$env_file")
+    if git -C "$REPO_ROOT" check-ignore -q "$env_file" 2>/dev/null; then
+      cp "$env_file" "$WORKTREE_DIR/$filename"
+      echo "Copied $filename" >&2
+    fi
+  done
+
+  if [[ -d "$REPO_ROOT/.claude" ]]; then
+    while IFS= read -r rel_path; do
+      [[ -z "$rel_path" ]] && continue
+      src="$REPO_ROOT/$rel_path"
+      target="$WORKTREE_DIR/$rel_path"
+      mkdir -p "$(dirname "$target")"
+      ln -sf "$src" "$target"
+      echo "Symlinked $rel_path" >&2
+    done < <(
+      comm -23 \
+        <(find "$REPO_ROOT/.claude" -type f -not -path "$REPO_ROOT/.claude/worktrees/*" | sed "s|$REPO_ROOT/||" | sort) \
+        <(git -C "$REPO_ROOT" ls-files .claude/ | sort)
+    )
+  fi
 fi
 
-# Repo-local override: if present, it owns dependency/build setup entirely.
-if [[ -x "$WORKTREE_DIR/.worktree-setup" ]]; then
-  echo "Running repo .worktree-setup..." >&2
-  (cd "$WORKTREE_DIR" && ./.worktree-setup >&2)
+# Concern 3 — Setup. A repo-shipped, trust-gated .worktree/post_create owns
+# setup entirely when present (autodetect is skipped). When present-but-untrusted
+# it is skipped with a warning and autodetect is still skipped (the repo opted
+# out). A trusted hook that fails is fatal — the ERR trap removes the worktree.
+POST_CREATE="$REPO_ROOT/.worktree/post_create"
+if [[ -f "$POST_CREATE" ]]; then
+  if trust_check "$POST_CREATE"; then
+    echo "Running .worktree/post_create ($POST_CREATE)..." >&2
+    # Explicit failure handling: the ERR trap doesn't fire for failing subshells
+    # on bash 3.2 (macOS), so clean up here so a bad hook never strands a worktree.
+    if ! (cd "$WORKTREE_DIR" && WORKTREE_DIR="$WORKTREE_DIR" REPO_ROOT="$REPO_ROOT" bash "$POST_CREATE" >&2); then
+      echo ".worktree/post_create failed — removing worktree..." >&2
+      git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true
+      exit 1
+    fi
+  else
+    echo "Warning: $POST_CREATE is untrusted — skipping setup." >&2
+    echo "         Review it, then trust it with:" >&2
+    echo "           \"\$CLAUDE_PLUGIN_ROOT/scripts/worktree-trust\" allow \"$POST_CREATE\"" >&2
+  fi
 else
   if [[ -f "$REPO_ROOT/mix.exs" ]]; then
     if [[ -d "$REPO_ROOT/deps" ]]; then

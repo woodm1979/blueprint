@@ -4,8 +4,15 @@ set -euo pipefail
 BRANCH_NAME="${1:?Usage: worktree-remove-cli <branch>}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/worktree-lib.sh"
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH_NAME"
+detect_layout "$REPO_ROOT"
+if [[ "$WT_LAYOUT" == bare ]]; then
+  WORKTREE_DIR="$WT_CONTAINER/$(slugify "$BRANCH_NAME")"
+else
+  WORKTREE_DIR="$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/$BRANCH_NAME"
+fi
 
 "$SCRIPT_DIR/worktree-remove" "$WORKTREE_DIR"
 

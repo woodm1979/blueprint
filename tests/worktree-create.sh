@@ -5,7 +5,12 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$REPO_ROOT/scripts/worktree-create"
+TRUST="$REPO_ROOT/scripts/worktree-trust"
 . "$REPO_ROOT/tests/helpers.sh"
+
+# Isolate the trust allowlist so tests never touch the real ~/.local/share store.
+export BLUEPRINT_WORKTREE_TRUST_FILE="$(mktemp)"
+trap 'rm -f "$BLUEPRINT_WORKTREE_TRUST_FILE"' EXIT
 
 # Setup: create a temp "repo" to act as our test subject
 setup_repo() {
@@ -138,40 +143,127 @@ cleanup() {
   cleanup "$repo"
 }
 
-# --- Test 5: Repo .worktree-setup override owns dependency setup ---
+# --- Test 5: Trusted .worktree/post_create owns setup, runs inside worktree ---
 {
   repo=$(setup_repo)
-  # Committed, executable override — checked out into the worktree and run from it.
-  cat > "$repo/.worktree-setup" <<'EOF'
+  mkdir -p "$repo/.worktree"
+  cat > "$repo/.worktree/post_create" <<'EOF'
 #!/usr/bin/env bash
-echo "ran" > setup-ran
+echo "ran in $PWD with REPO_ROOT=$REPO_ROOT" > setup-ran
 EOF
-  chmod +x "$repo/.worktree-setup"
-  git -C "$repo" add .worktree-setup
-  git -C "$repo" commit -q -m "add worktree-setup override"
+  chmod +x "$repo/.worktree/post_create"
+  git -C "$repo" add .worktree/post_create
+  git -C "$repo" commit -q -m "add post_create override"
 
-  # .env is still copied — the override only replaces dependency installation.
-  echo ".env" >> "$repo/.gitignore"
-  echo "secret" > "$repo/.env"
-  git -C "$repo" add .gitignore
-  git -C "$repo" commit -q -m "add gitignore"
+  # Trust it (direnv-style content-hash allow).
+  bash "$TRUST" allow "$repo/.worktree/post_create" >/dev/null 2>&1
 
   parent="$(dirname "$repo")"
   base="$(basename "$repo")"
-  wt="$parent/${base}-worktrees/override-test"
+  wt="$parent/${base}-worktrees/postcreate-test"
 
-  bash "$SCRIPT" "$repo" "override-test" >/dev/null 2>&1
+  bash "$SCRIPT" "$repo" "postcreate-test" >/dev/null 2>&1
 
-  if [[ -f "$wt/setup-ran" ]]; then
-    pass ".worktree-setup override ran inside the worktree"
+  if [[ -f "$wt/setup-ran" ]] && grep -q "REPO_ROOT=$repo" "$wt/setup-ran"; then
+    pass "trusted .worktree/post_create ran inside worktree with REPO_ROOT set"
   else
-    fail ".worktree-setup override ran inside the worktree"
+    fail "trusted .worktree/post_create ran inside worktree with REPO_ROOT set"
   fi
 
-  if [[ -f "$wt/.env" && ! -L "$wt/.env" ]]; then
-    pass "override still copies .env (override replaces only dependency setup)"
+  cleanup "$repo"
+}
+
+# --- Test 5b: Untrusted .worktree/post_create is skipped (not run) ---
+{
+  repo=$(setup_repo)
+  mkdir -p "$repo/.worktree"
+  cat > "$repo/.worktree/post_create" <<'EOF'
+#!/usr/bin/env bash
+echo "ran" > setup-ran
+EOF
+  chmod +x "$repo/.worktree/post_create"
+  git -C "$repo" add .worktree/post_create
+  git -C "$repo" commit -q -m "add untrusted post_create"
+  # Deliberately do NOT trust it.
+
+  parent="$(dirname "$repo")"
+  base="$(basename "$repo")"
+  wt="$parent/${base}-worktrees/untrusted-test"
+
+  stderr_output=$(bash "$SCRIPT" "$repo" "untrusted-test" 2>&1 1>/dev/null)
+
+  if [[ ! -f "$wt/setup-ran" ]]; then
+    pass "untrusted .worktree/post_create is not executed"
   else
-    fail "override still copies .env (override replaces only dependency setup)"
+    fail "untrusted .worktree/post_create is not executed (it ran)"
+  fi
+
+  if grep -q "untrusted" <<< "$stderr_output"; then
+    pass "untrusted post_create prints a warning to stderr"
+  else
+    fail "untrusted post_create prints a warning to stderr"
+  fi
+
+  cleanup "$repo"
+}
+
+# --- Test 5d: A failing trusted post_create aborts and removes the worktree ---
+{
+  repo=$(setup_repo)
+  mkdir -p "$repo/.worktree"
+  cat > "$repo/.worktree/post_create" <<'EOF'
+#!/usr/bin/env bash
+exit 7
+EOF
+  chmod +x "$repo/.worktree/post_create"
+  git -C "$repo" add .worktree/post_create
+  git -C "$repo" commit -q -m "add failing post_create"
+  bash "$TRUST" allow "$repo/.worktree/post_create" >/dev/null 2>&1
+
+  parent="$(dirname "$repo")"; base="$(basename "$repo")"
+  wt="$parent/${base}-worktrees/fail-test"
+
+  if bash "$SCRIPT" "$repo" "fail-test" >/dev/null 2>&1; then
+    fail "failing post_create makes worktree-create exit non-zero"
+  else
+    pass "failing post_create makes worktree-create exit non-zero"
+  fi
+
+  if [[ ! -d "$wt" ]]; then
+    pass "failing post_create triggers cleanup (worktree removed)"
+  else
+    fail "failing post_create triggers cleanup (worktree removed)"
+  fi
+
+  cleanup "$repo"
+}
+
+# --- Test 5c: .worktreeinclude brings files (copy default, & = symlink) ---
+{
+  repo=$(setup_repo)
+  echo -e ".env\nshared.txt" >> "$repo/.gitignore"
+  echo "secret" > "$repo/.env"
+  echo "shared" > "$repo/shared.txt"
+  printf '.env\n&shared.txt\n# a comment\n\n' > "$repo/.worktreeinclude"
+  git -C "$repo" add .gitignore .worktreeinclude
+  git -C "$repo" commit -q -m "add worktreeinclude"
+
+  parent="$(dirname "$repo")"
+  base="$(basename "$repo")"
+  wt="$parent/${base}-worktrees/include-test"
+
+  bash "$SCRIPT" "$repo" "include-test" >/dev/null 2>&1
+
+  if [[ -f "$wt/.env" && ! -L "$wt/.env" && "$(cat "$wt/.env")" == "secret" ]]; then
+    pass ".worktreeinclude copies an unmarked entry"
+  else
+    fail ".worktreeinclude copies an unmarked entry"
+  fi
+
+  if [[ -L "$wt/shared.txt" && "$(cat "$wt/shared.txt")" == "shared" ]]; then
+    pass ".worktreeinclude symlinks an &-marked entry"
+  else
+    fail ".worktreeinclude symlinks an &-marked entry"
   fi
 
   cleanup "$repo"
@@ -260,6 +352,58 @@ EOF
     fail "hook script contains no BASH_SOURCE/cd/pushd tricks"
   else
     pass "hook script contains no BASH_SOURCE/cd/pushd tricks"
+  fi
+}
+
+# --- Test 12: Bare layout — worktree lands as a slugged sibling of .bare ---
+{
+  src=$(setup_repo)
+  container=$(mktemp -d)
+  git clone -q --bare "$src" "$container/.bare"
+  # Establish a primary checkout worktree inside the container.
+  git -C "$container/.bare" worktree add -q "$container/main" >/dev/null 2>&1
+
+  # REPO_ROOT is the in-container worktree (mimics how the hook resolves it).
+  bash "$SCRIPT" "$container/main" "Feature-Auth" >/dev/null 2>&1
+
+  # Slug lowercases and maps non-[a-z0-9_] to _: "Feature-Auth" -> "feature_auth".
+  expected_wt="$container/feature_auth"
+  if [[ -d "$expected_wt" ]] && git -C "$container/.bare" worktree list | grep -q "$expected_wt"; then
+    pass "bare layout: worktree created at <container>/<slug>"
+  else
+    fail "bare layout: worktree created at <container>/<slug> (expected $expected_wt)"
+  fi
+
+  # The branch name itself is preserved (not slugged).
+  if git -C "$expected_wt" symbolic-ref --short HEAD 2>/dev/null | grep -qx "Feature-Auth"; then
+    pass "bare layout: branch name preserved (only dir is slugged)"
+  else
+    fail "bare layout: branch name preserved (only dir is slugged)"
+  fi
+
+  rm -rf "$src" "$container"
+}
+
+# --- Test 13: README documents the new conventions, not the stale override ---
+{
+  readme="$REPO_ROOT/README.md"
+  if grep -q '\.worktree/post_create' "$readme" && grep -q '\.worktreeinclude' "$readme"; then
+    pass "README documents .worktree/post_create and .worktreeinclude"
+  else
+    fail "README documents .worktree/post_create and .worktreeinclude"
+  fi
+  # The code no longer consults the stale name; the README must not present it
+  # as the active override (a Note explaining the rename is allowed).
+  if grep -qE '`?\.worktree-setup`? exists|runs `\.claude/worktree-setup\.sh`' "$readme"; then
+    fail "README still presents the stale .worktree-setup override as active"
+  else
+    pass "README does not present the stale override as active"
+  fi
+  # Code drift: scripts/worktree-create must reference the new hook name only.
+  if grep -q 'worktree-setup' "$SCRIPT"; then
+    fail "scripts/worktree-create still references .worktree-setup"
+  else
+    pass "scripts/worktree-create references only .worktree/post_create"
   fi
 }
 
