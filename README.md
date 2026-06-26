@@ -41,15 +41,16 @@ claude plugin install blueprint
 
 `/blueprint` and `/build` support per-feature git worktrees so parallel builds never interfere with each other.
 
-### Path convention
+The worktree lifecycle is split into three orthogonal concerns, each with a sensible default and a clear override point. Layout (standard vs **bare** repo) is detected once, up front, and every concern is correct for both.
 
-Worktrees are created outside the repo:
+### Concern 1 — Creation (path convention)
 
-```
-<parent-dir>/<repo-name>-worktrees/<feature-slug>
-```
+The path is tool-owned; you don't override it with a script. The default depends on layout:
 
-For example, if your repo is at `/home/user/myapp`, the worktree for `feature-auth` lands at `/home/user/myapp-worktrees/feature-auth`.
+- **Standard repo:** `<parent-dir>/<repo-name>-worktrees/<feature-slug>` — e.g. a repo at `/home/user/myapp` puts `feature-auth` at `/home/user/myapp-worktrees/feature-auth`.
+- **Bare repo** (a `.bare` git dir with sibling worktrees): `<container>/<slug>` alongside `.bare`, where `slug` lowercases the branch and maps anything outside `[a-z0-9_]` to `_` (`Feature-Auth` → `feature_auth`). The branch name itself is preserved.
+
+The final worktree path is printed as the **last stdout line** (all progress goes to stderr).
 
 ### How it works
 
@@ -57,12 +58,45 @@ For example, if your repo is at `/home/user/myapp`, the worktree for `feature-au
 2. `/build` reads the `Worktree:` field and enters the worktree before executing any sections. All commits land on the feature branch.
 3. `afk-build.sh` also reads the field and passes the worktree directory to docker as the project root.
 
-### Override script
+### Concern 2 — File-bringing (`.worktreeinclude`)
 
-If `.claude/worktree-setup.sh` exists in the repo root, the `WorktreeCreate` hook runs it exclusively — auto-detection (Node/Python/Elixir/etc.) is skipped entirely. The script receives two env vars:
+A repo-root **`.worktreeinclude`** (gitignore-style, one path per line) lists gitignored/shared files to bring into each new worktree. When present, it is authoritative.
 
-- `WORKTREE_DIR` — absolute path to the new worktree
+- An unmarked line is **copied** (the portable default).
+- A line prefixed with **`&`** is **symlinked** to the canonical source instead.
+- Blank lines and `#` comments are ignored.
+- Source is the repo root in a standard layout, the **container** in a bare layout.
+
+```
+# .worktreeinclude
+.env                       # copied
+&graphdb.license           # symlinked to the canonical copy
+&.claude/settings.local.json
+```
+
+If no `.worktreeinclude` exists, the hook falls back to its historical behavior: copy gitignored `.env*` files and symlink untracked `.claude/` files.
+
+### Concern 3 — Setup & teardown hooks (trust-gated)
+
+Repo-shipped lifecycle scripts under `.worktree/` own setup/teardown when present. Each receives two env vars and runs with its cwd set to the worktree:
+
+- `WORKTREE_DIR` — absolute path to the worktree
 - `REPO_ROOT` — absolute path to the main repo
+
+| Hook | When | Effect |
+|------|------|--------|
+| `.worktree/post_create` | after a worktree is created | owns setup entirely — language auto-detection (Node/Python/Elixir/…) is skipped |
+| `.worktree/pre_delete` | before a worktree is removed | teardown (e.g. drop per-worktree databases) |
+
+**Trust model (direnv-style).** A repo-shipped script that executes code is inert until you allow it. Trust is keyed by **content hash**, so editing the script re-locks it until re-allowed:
+
+```
+"$CLAUDE_PLUGIN_ROOT/scripts/worktree-trust" allow .worktree/post_create
+```
+
+`worktree-trust` also supports `deny`, `check`, and `list`. Until a hook is trusted it is skipped with a warning; creation/removal still proceed. (The allowlist lives at `${XDG_DATA_HOME:-~/.local/share}/blueprint/trusted-hooks`.)
+
+> **Note:** `.worktree/post_create` replaces the older `.worktree-setup` / `.claude/worktree-setup.sh` override, which is no longer consulted.
 
 ### Cleanup
 

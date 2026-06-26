@@ -5,7 +5,12 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT="$REPO_ROOT/scripts/worktree-remove"
+TRUST="$REPO_ROOT/scripts/worktree-trust"
 . "$REPO_ROOT/tests/helpers.sh"
+
+# Isolate the trust allowlist so tests never touch the real ~/.local/share store.
+export BLUEPRINT_WORKTREE_TRUST_FILE="$(mktemp)"
+trap 'rm -f "$BLUEPRINT_WORKTREE_TRUST_FILE"' EXIT
 
 
 # --- Test 1: Removes existing worktree from git worktree list ---
@@ -110,6 +115,87 @@ SCRIPT="$REPO_ROOT/scripts/worktree-remove"
   else
     fail "hooks/hooks.json contains no WorktreeRemove key (still present)"
   fi
+}
+
+# --- Test 7: Trusted .worktree/pre_delete runs before removal ---
+{
+  repo=$(mktemp -d)
+  git -C "$repo" init -q
+  git -C "$repo" config user.email "test@test.com"
+  git -C "$repo" config user.name "Test"
+  touch "$repo/README.md"
+  mkdir -p "$repo/.worktree"
+  # Hook writes evidence into REPO_ROOT, which outlives the removed worktree.
+  cat > "$repo/.worktree/pre_delete" <<'EOF'
+#!/usr/bin/env bash
+echo "torn down" > "$REPO_ROOT/pre-delete-ran"
+EOF
+  chmod +x "$repo/.worktree/pre_delete"
+  git -C "$repo" add README.md .worktree/pre_delete
+  git -C "$repo" commit -q -m "init with pre_delete"
+
+  parent="$(dirname "$repo")"; base="$(basename "$repo")"
+  wt_dir="$parent/${base}-worktrees/pd-trusted"
+  mkdir -p "$parent/${base}-worktrees"
+  git -C "$repo" worktree add -q -b "pd-trusted" "$wt_dir" >/dev/null 2>&1
+
+  bash "$TRUST" allow "$wt_dir/.worktree/pre_delete" >/dev/null 2>&1
+
+  cd "$repo" && bash "$SCRIPT" "$wt_dir" >/dev/null 2>/dev/null
+
+  if [[ -f "$repo/pre-delete-ran" ]]; then
+    pass "trusted .worktree/pre_delete ran before removal"
+  else
+    fail "trusted .worktree/pre_delete ran before removal"
+  fi
+  if [[ ! -d "$wt_dir" ]]; then
+    pass "worktree still removed after pre_delete"
+  else
+    fail "worktree still removed after pre_delete"
+  fi
+
+  cleanup "$repo"
+}
+
+# --- Test 8: Untrusted .worktree/pre_delete is skipped, removal proceeds ---
+{
+  repo=$(mktemp -d)
+  git -C "$repo" init -q
+  git -C "$repo" config user.email "test@test.com"
+  git -C "$repo" config user.name "Test"
+  touch "$repo/README.md"
+  mkdir -p "$repo/.worktree"
+  # Distinct content from Test 7 — trust keys on content, so identical bytes
+  # would otherwise inherit Test 7's allow.
+  cat > "$repo/.worktree/pre_delete" <<'EOF'
+#!/usr/bin/env bash
+# untrusted variant
+echo "untrusted teardown" > "$REPO_ROOT/pre-delete-ran"
+EOF
+  chmod +x "$repo/.worktree/pre_delete"
+  git -C "$repo" add README.md .worktree/pre_delete
+  git -C "$repo" commit -q -m "init with untrusted pre_delete"
+  # Deliberately not trusted.
+
+  parent="$(dirname "$repo")"; base="$(basename "$repo")"
+  wt_dir="$parent/${base}-worktrees/pd-untrusted"
+  mkdir -p "$parent/${base}-worktrees"
+  git -C "$repo" worktree add -q -b "pd-untrusted" "$wt_dir" >/dev/null 2>&1
+
+  cd "$repo" && bash "$SCRIPT" "$wt_dir" >/dev/null 2>/dev/null
+
+  if [[ ! -f "$repo/pre-delete-ran" ]]; then
+    pass "untrusted .worktree/pre_delete is not executed"
+  else
+    fail "untrusted .worktree/pre_delete is not executed (it ran)"
+  fi
+  if [[ ! -d "$wt_dir" ]]; then
+    pass "removal proceeds despite untrusted pre_delete"
+  else
+    fail "removal proceeds despite untrusted pre_delete"
+  fi
+
+  cleanup "$repo"
 }
 
 summarize

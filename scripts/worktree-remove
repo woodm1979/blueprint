@@ -3,6 +3,8 @@ set -euo pipefail
 
 WORKTREE_PATH="${1:?Usage: worktree-remove <worktree-path>}"
 
+. "$(dirname "$0")/worktree-lib.sh"
+
 if [[ ! -d "$WORKTREE_PATH" ]]; then
   echo "Worktree path not found — nothing to remove." >&2
   exit 0
@@ -12,6 +14,15 @@ BRANCH=$(git -C "$WORKTREE_PATH" symbolic-ref --short HEAD 2>/dev/null || echo "
 REPO_ROOT=$(dirname "$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir)")
 
 echo "$BRANCH"
+
+# Teardown hatch — a repo-shipped, trust-gated .worktree/pre_delete runs before
+# removal (e.g. drop per-worktree DBs). Sourced from the worktree being deleted,
+# since the committed hook is present there in every layout.
+run_trusted_hook "$WORKTREE_PATH" "$WORKTREE_PATH/.worktree/pre_delete" "$REPO_ROOT" ".worktree/pre_delete" || true
+
+# Supacode (and other launchers) may lock a managed worktree; unlock defensively
+# so removal doesn't fail. Harmless when not locked.
+git -C "$REPO_ROOT" worktree unlock "$WORKTREE_PATH" 2>/dev/null || true
 
 git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_PATH" >&2
 git -C "$REPO_ROOT" worktree prune >&2

@@ -11,7 +11,7 @@ Safely removes a feature worktree after its branch has been merged. Given a PLAN
 
 1. Resolves the `Worktree:` field from the PLAN header.
 2. Runs three sanity checks in order — uncommitted changes, unpushed commits, unmerged branch.
-3. On confirmation, runs `git worktree remove --force "$WORKTREE_DIR" && git worktree prune`.
+3. On confirmation, runs `"$CLAUDE_PLUGIN_ROOT/scripts/worktree-remove" "$WORKTREE_DIR"` (which runs any trusted `.worktree/pre_delete` teardown, unlocks, removes, and prunes).
 
 ## Process
 
@@ -77,10 +77,10 @@ If the feature branch is **not** in the merged list:
 
 ### Step 7 — Remove worktree
 
-Run:
+Run the plugin's remove script, which runs any trusted `.worktree/pre_delete` teardown hook, defensively unlocks, then removes and prunes:
 
 ```
-git worktree remove --force "$WORKTREE_DIR" && git worktree prune
+"$CLAUDE_PLUGIN_ROOT/scripts/worktree-remove" "$WORKTREE_DIR"
 ```
 
 ### Step 8 — Confirm
