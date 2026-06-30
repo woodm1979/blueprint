@@ -102,7 +102,13 @@ Repo-shipped lifecycle scripts under `.worktree/` own setup/teardown when presen
 
 If you use [herdr](https://herdr.dev) as your terminal multiplexer, the `herdr-plugin/`
 directory wires herdr-created worktrees into this *same* `scripts/worktree-create`
-pipeline — one code path whether Claude or herdr makes the worktree. Two parts:
+pipeline — one code path whether Claude or herdr makes the worktree.
+
+> **Not using herdr? Ignore this section.** Nothing in `herdr-plugin/` is referenced by
+> the Claude plugin (`.claude-plugin/`, `hooks/`, `skills/`), so installing blueprint never
+> loads or runs it. It activates only if *you* link it (`herdr plugin link`) or bind a key.
+
+Two parts:
 
 - **`herdr-new-worktree.sh`** — creates a worktree the blueprint way (layout-aware
   path + full provisioning) then attaches herdr to it via `herdr worktree open`. Bind
