@@ -1,0 +1,13 @@
+id = "blueprint-worktree-provision"
+name = "Blueprint worktree provisioning"
+version = "0.1.0"
+min_herdr_version = "0.7.1"
+
+# When herdr creates a worktree, run blueprint's provisioning on it — the SAME
+# scripts/worktree-create the Claude WorktreeCreate hook uses. The shim reads the
+# new worktree's path from the event JSON and calls that script in provision-only
+# mode, so a repo's .worktree/post_create (and .worktreeinclude) run identically
+# no matter whether Claude or herdr created the worktree.
+[[events]]
+on = "worktree.created"
+command = ["bash", "-c", "exec \"$HERDR_PLUGIN_ROOT/on-worktree-created.sh\""]

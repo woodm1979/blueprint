@@ -98,6 +98,36 @@ Repo-shipped lifecycle scripts under `.worktree/` own setup/teardown when presen
 
 > **Note:** `.worktree/post_create` replaces the older `.worktree-setup` / `.claude/worktree-setup.sh` override, which is no longer consulted.
 
+### herdr integration (optional)
+
+If you use [herdr](https://herdr.dev) as your terminal multiplexer, the `herdr-plugin/`
+directory wires herdr-created worktrees into this *same* `scripts/worktree-create`
+pipeline — one code path whether Claude or herdr makes the worktree.
+
+> **Not using herdr? Ignore this section.** Nothing in `herdr-plugin/` is referenced by
+> the Claude plugin (`.claude-plugin/`, `hooks/`, `skills/`), so installing blueprint never
+> loads or runs it. It activates only if *you* link it (`herdr plugin link`) or bind a key.
+
+Two parts:
+
+- **`herdr-new-worktree.sh`** — creates a worktree the blueprint way (layout-aware
+  path + full provisioning) then attaches herdr to it via `herdr worktree open`. Bind
+  it to a `type = "pane"` keybinding in `~/.config/herdr/config.toml`:
+  ```toml
+  [[keys.command]]
+  key = "prefix+ctrl+w"
+  type = "pane"
+  command = "/bin/bash /path/to/blueprint/herdr-plugin/herdr-new-worktree.sh"
+  ```
+- **`herdr-plugin.toml`** (event hook) — fallback for worktrees made via herdr's own
+  native UI (which land at `~/.herdr/worktrees/<repo>/<branch>`): the `worktree.created`
+  event re-runs provisioning on them in place. Enable with `herdr plugin link <path>/herdr-plugin`.
+
+`scripts/worktree-create` accepts an optional 4th arg (an already-created worktree dir);
+when given it skips `git worktree add` and only provisions — that's how the herdr paths
+reuse it. `WT_PROVISION_ON_FAIL=keep` leaves a worktree in place on setup failure
+(herdr owns it) instead of the default `remove`.
+
 ### Cleanup
 
 After a feature branch is merged, remove its worktree with:
