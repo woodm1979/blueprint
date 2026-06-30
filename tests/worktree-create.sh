@@ -407,4 +407,80 @@ EOF
   fi
 }
 
+# --- Test 14: existing-worktree mode provisions in place, skips creation ---
+# (Mimics herdr: it did its own `git worktree add`, then fires worktree.created;
+# we provision the dir it made via the SAME script, 4th arg = existing dir.)
+{
+  repo=$(setup_repo)
+  echo ".env" >> "$repo/.gitignore"
+  echo "secret" > "$repo/.env"
+  printf '.env\n' > "$repo/.worktreeinclude"
+  mkdir -p "$repo/.worktree"
+  printf '#!/usr/bin/env bash\necho ran > setup-ran\n' > "$repo/.worktree/post_create"
+  chmod +x "$repo/.worktree/post_create"
+  git -C "$repo" add .gitignore .worktreeinclude .worktree/post_create
+  git -C "$repo" commit -q -m "add provisioning config"
+  bash "$TRUST" allow "$repo/.worktree/post_create" >/dev/null 2>&1
+
+  # Pre-create the worktree ourselves at a path the script would NOT compute.
+  ext_parent=$(mktemp -d); ext_wt="$ext_parent/herdr-style-wt"
+  git -C "$repo" worktree add -q -b ext-feature "$ext_wt" >/dev/null 2>&1
+
+  before=$(git -C "$repo" worktree list | wc -l)
+  bash "$SCRIPT" "$repo" "ext-feature" "" "$ext_wt" >/dev/null 2>&1
+  after=$(git -C "$repo" worktree list | wc -l)
+
+  if [[ "$before" == "$after" ]]; then
+    pass "existing-worktree mode does not create another worktree"
+  else
+    fail "existing-worktree mode does not create another worktree (before=$before after=$after)"
+  fi
+
+  if [[ -f "$ext_wt/setup-ran" ]]; then
+    pass "existing-worktree mode runs .worktree/post_create in place"
+  else
+    fail "existing-worktree mode runs .worktree/post_create in place"
+  fi
+
+  if [[ -f "$ext_wt/.env" && "$(cat "$ext_wt/.env")" == "secret" ]]; then
+    pass "existing-worktree mode brings .worktreeinclude files"
+  else
+    fail "existing-worktree mode brings .worktreeinclude files"
+  fi
+
+  git -C "$repo" worktree remove --force "$ext_wt" 2>/dev/null || true
+  rm -rf "$ext_parent"
+  cleanup "$repo"
+}
+
+# --- Test 15: existing-worktree mode + ON_FAIL=keep leaves the worktree ---
+{
+  repo=$(setup_repo)
+  mkdir -p "$repo/.worktree"
+  printf '#!/usr/bin/env bash\nexit 9\n' > "$repo/.worktree/post_create"
+  chmod +x "$repo/.worktree/post_create"
+  git -C "$repo" add .worktree/post_create
+  git -C "$repo" commit -q -m "failing post_create"
+  bash "$TRUST" allow "$repo/.worktree/post_create" >/dev/null 2>&1
+
+  ext_parent=$(mktemp -d); ext_wt="$ext_parent/keep-wt"
+  git -C "$repo" worktree add -q -b keep-feature "$ext_wt" >/dev/null 2>&1
+
+  if WT_PROVISION_ON_FAIL=keep bash "$SCRIPT" "$repo" "keep-feature" "" "$ext_wt" >/dev/null 2>&1; then
+    fail "keep mode: failing post_create still exits non-zero"
+  else
+    pass "keep mode: failing post_create still exits non-zero"
+  fi
+
+  if [[ -d "$ext_wt" ]] && git -C "$repo" worktree list | grep -q "$ext_wt"; then
+    pass "keep mode: worktree is left in place after failure"
+  else
+    fail "keep mode: worktree is left in place after failure"
+  fi
+
+  git -C "$repo" worktree remove --force "$ext_wt" 2>/dev/null || true
+  rm -rf "$ext_parent"
+  cleanup "$repo"
+}
+
 summarize

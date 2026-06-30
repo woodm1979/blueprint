@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="${1:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>]}"
-BRANCH="${2:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>]}"
+REPO_ROOT="${1:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>] [<existing-worktree-dir>]}"
+BRANCH="${2:?Usage: worktree-create <repo-root> <branch-name> [<base-ref>] [<existing-worktree-dir>]}"
 BASE="${3:-}"
+# Optional: a worktree another tool already created (e.g. herdr, which fires
+# worktree.created *after* its own `git worktree add`). When set, Concern 1
+# (creation) is skipped and we provision this directory in place.
+EXISTING_WT="${4:-}"
+# Provisioning-failure policy: "remove" (default — undo a worktree this script
+# created) or "keep" (a worktree another tool owns; report but never delete it).
+ON_FAIL="${WT_PROVISION_ON_FAIL:-remove}"
 
 . "$(dirname "$0")/worktree-lib.sh"
 
@@ -20,6 +27,12 @@ else
   INCLUDE_SOURCE="$REPO_ROOT"
 fi
 
+# When provisioning an already-created worktree, honor its actual path (the
+# creating tool chose it); INCLUDE_SOURCE above still derives from the layout.
+if [[ -n "$EXISTING_WT" ]]; then
+  WORKTREE_DIR="$EXISTING_WT"
+fi
+
 # Copy a directory cheaply: APFS copy-on-write clone (instant, isolated on
 # write), falling back to hard-links on filesystems without clonefile.
 clone_dir() {
@@ -27,27 +40,39 @@ clone_dir() {
   cp -c -R "$src" "$dst" 2>/dev/null || cp -Rl "$src" "$dst"
 }
 
-if [[ -e "$WORKTREE_DIR" ]]; then
-  echo "Error: '$WORKTREE_DIR' already exists — refusing to clobber. Remove it first (worktree-remove)." >&2
-  exit 1
-fi
+if [[ -z "$EXISTING_WT" ]]; then
+  # Concern 1 — Creation (only when we own it).
+  if [[ -e "$WORKTREE_DIR" ]]; then
+    echo "Error: '$WORKTREE_DIR' already exists — refusing to clobber. Remove it first (worktree-remove)." >&2
+    exit 1
+  fi
 
-git -C "$REPO_ROOT" worktree prune >&2
+  git -C "$REPO_ROOT" worktree prune >&2
 
-if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
-  echo "Branch '$BRANCH' already exists, checking it out..." >&2
-  git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH" >&2
-elif git -C "$REPO_ROOT" show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
-  echo "Tracking existing origin/$BRANCH..." >&2
-  git -C "$REPO_ROOT" worktree add --track -b "$BRANCH" "$WORKTREE_DIR" "origin/$BRANCH" >&2
+  if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+    echo "Branch '$BRANCH' already exists, checking it out..." >&2
+    git -C "$REPO_ROOT" worktree add "$WORKTREE_DIR" "$BRANCH" >&2
+  elif git -C "$REPO_ROOT" show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+    echo "Tracking existing origin/$BRANCH..." >&2
+    git -C "$REPO_ROOT" worktree add --track -b "$BRANCH" "$WORKTREE_DIR" "origin/$BRANCH" >&2
+  else
+    echo "Creating new branch '$BRANCH'${BASE:+ from $BASE}..." >&2
+    git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" ${BASE:+"$BASE"} >&2
+  fi
 else
-  echo "Creating new branch '$BRANCH'${BASE:+ from $BASE}..." >&2
-  git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WORKTREE_DIR" ${BASE:+"$BASE"} >&2
+  # Creation already done by another tool (e.g. herdr). Verify, then provision in place.
+  if ! git -C "$WORKTREE_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Error: '$WORKTREE_DIR' is not a git worktree — cannot provision." >&2
+    exit 1
+  fi
+  echo "Provisioning existing worktree: $WORKTREE_DIR" >&2
 fi
 
-# Worktree now exists — arm cleanup so a later setup failure removes only
-# what this run created (never a pre-existing worktree).
-trap 'echo "Setup failed, removing worktree..." >&2; git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
+# Worktree now exists — arm cleanup so a later setup failure removes only what
+# this run created. Never remove a worktree another tool owns (ON_FAIL=keep).
+if [[ "$ON_FAIL" == remove ]]; then
+  trap 'echo "Setup failed, removing worktree..." >&2; git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true' ERR
+fi
 
 # Concern 2 — File-bringing. A repo-root .worktreeinclude (gitignore syntax) is
 # authoritative when present: each line is a gitignored/shared path to bring in.
@@ -121,8 +146,12 @@ if [[ -f "$POST_CREATE" ]]; then
     # Explicit failure handling: the ERR trap doesn't fire for failing subshells
     # on bash 3.2 (macOS), so clean up here so a bad hook never strands a worktree.
     if ! (cd "$WORKTREE_DIR" && WORKTREE_DIR="$WORKTREE_DIR" REPO_ROOT="$REPO_ROOT" bash "$POST_CREATE" >&2); then
-      echo ".worktree/post_create failed — removing worktree..." >&2
-      git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true
+      if [[ "$ON_FAIL" == remove ]]; then
+        echo ".worktree/post_create failed — removing worktree..." >&2
+        git -C "$REPO_ROOT" worktree remove --force "$WORKTREE_DIR" 2>/dev/null || true
+      else
+        echo ".worktree/post_create failed — leaving worktree in place ($WORKTREE_DIR)." >&2
+      fi
       exit 1
     fi
   else
