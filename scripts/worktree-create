@@ -203,7 +203,11 @@ else
 
   # Per-directory init: tools that key off path treat the worktree as new/untrusted.
   # Non-fatal — a missing optional tool must not trigger the ERR trap.
-  if [[ -f "$WORKTREE_DIR/.mise.toml" || -f "$WORKTREE_DIR/.tool-versions" ]] && command -v mise &>/dev/null; then
+  # Match any of mise's config filenames (dotted and dotless, incl. .config/).
+  if command -v mise &>/dev/null && [[ \
+    -f "$WORKTREE_DIR/mise.toml" || -f "$WORKTREE_DIR/.mise.toml" || \
+    -f "$WORKTREE_DIR/mise/config.toml" || -f "$WORKTREE_DIR/.config/mise.toml" || \
+    -f "$WORKTREE_DIR/.config/mise/config.toml" || -f "$WORKTREE_DIR/.tool-versions" ]]; then
     (cd "$WORKTREE_DIR" && mise trust && mise install) >&2 || echo "Warning: mise setup failed" >&2
   fi
 

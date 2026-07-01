@@ -483,4 +483,30 @@ EOF
   cleanup "$repo"
 }
 
+# --- Test: autodetect runs `mise trust` for a dotless mise.toml ---
+{
+  repo=$(setup_repo)
+  # sigma-style config: dotless mise.toml (not .mise.toml), committed so it lands
+  # in the new worktree checkout.
+  printf 'min_version = "2024.1.1"\n' > "$repo/mise.toml"
+  git -C "$repo" add mise.toml
+  git -C "$repo" commit -q -m "add dotless mise.toml"
+
+  # Shim `mise` onto PATH: record every invocation's args.
+  shim_dir=$(mktemp -d); calls="$shim_dir/calls"
+  printf '#!/usr/bin/env bash\necho "$@" >> "%s"\n' "$calls" > "$shim_dir/mise"
+  chmod +x "$shim_dir/mise"
+
+  PATH="$shim_dir:$PATH" bash "$SCRIPT" "$repo" "mise-feature" >/dev/null 2>&1
+
+  if [[ -f "$calls" ]] && grep -q '^trust' "$calls"; then
+    pass "autodetect runs 'mise trust' for dotless mise.toml"
+  else
+    fail "autodetect runs 'mise trust' for dotless mise.toml (calls: $(cat "$calls" 2>/dev/null))"
+  fi
+
+  rm -rf "$shim_dir"
+  cleanup "$repo"
+}
+
 summarize
