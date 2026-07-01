@@ -173,7 +173,7 @@ EOF
   cleanup "$repo"
 }
 
-# --- Test 5b: Untrusted .worktree/post_create is skipped (not run) ---
+# --- Test 5b: Untrusted .worktree/post_create — skipped, LOUD, non-zero, kept ---
 {
   repo=$(setup_repo)
   mkdir -p "$repo/.worktree"
@@ -190,7 +190,11 @@ EOF
   base="$(basename "$repo")"
   wt="$parent/${base}-worktrees/untrusted-test"
 
+  # Capture stderr + exit code without tripping the test's own `set -e`.
+  set +e
   stderr_output=$(bash "$SCRIPT" "$repo" "untrusted-test" 2>&1 1>/dev/null)
+  rc=$?
+  set -e
 
   if [[ ! -f "$wt/setup-ran" ]]; then
     pass "untrusted .worktree/post_create is not executed"
@@ -198,10 +202,23 @@ EOF
     fail "untrusted .worktree/post_create is not executed (it ran)"
   fi
 
-  if grep -q "untrusted" <<< "$stderr_output"; then
-    pass "untrusted post_create prints a warning to stderr"
+  if [[ "$rc" -ne 0 ]]; then
+    pass "untrusted post_create makes worktree-create exit non-zero (loud, not silent)"
   else
-    fail "untrusted post_create prints a warning to stderr"
+    fail "untrusted post_create makes worktree-create exit non-zero (got exit 0 — silent skip)"
+  fi
+
+  if grep -q "NOT PROVISIONED" <<< "$stderr_output" && grep -q 'worktree-trust" allow' <<< "$stderr_output"; then
+    pass "untrusted post_create prints an actionable trust + provision command"
+  else
+    fail "untrusted post_create prints an actionable trust + provision command"
+  fi
+
+  # Worktree must be KEPT (created but unprovisioned), never removed on this path.
+  if [[ -d "$wt" ]] && git -C "$repo" worktree list | grep -q "$wt"; then
+    pass "untrusted post_create keeps the worktree (created but unprovisioned)"
+  else
+    fail "untrusted post_create keeps the worktree (created but unprovisioned)"
   fi
 
   cleanup "$repo"

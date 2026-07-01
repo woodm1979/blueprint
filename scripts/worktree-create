@@ -155,9 +155,30 @@ if [[ -f "$POST_CREATE" ]]; then
       exit 1
     fi
   else
-    echo "Warning: $POST_CREATE is untrusted — skipping setup." >&2
-    echo "         Review it, then trust it with:" >&2
-    echo "           \"\$CLAUDE_PLUGIN_ROOT/scripts/worktree-trust\" allow \"$POST_CREATE\"" >&2
+    # Present but untrusted: DON'T silently skip. An unprovisioned worktree that
+    # exits 0 looks successful — the herdr pane closes, Claude reports done — and
+    # the missing setup (deps, mise trust, DBs) only surfaces later as breakage.
+    # Fail loudly with a distinct code (3 = "created but not provisioned") so every
+    # caller reports it. The worktree is fine and intentionally KEPT: disarm the
+    # cleanup trap and print the exact commands to trust + provision in place.
+    trap - ERR
+    {
+      echo ""
+      echo "═══════════════════════════════════════════════════════════════"
+      echo "  ⚠  WORKTREE CREATED BUT NOT PROVISIONED"
+      echo "═══════════════════════════════════════════════════════════════"
+      echo "  $POST_CREATE"
+      echo "  is untrusted, so NO setup ran (deps, mise trust, DBs, etc.)."
+      echo "  A hook re-locks itself whenever its contents change."
+      echo ""
+      echo "  Review it, then trust + provision in place:"
+      echo "    \"\$CLAUDE_PLUGIN_ROOT/scripts/worktree-trust\" allow \"$POST_CREATE\""
+      echo "    \"\$CLAUDE_PLUGIN_ROOT/scripts/worktree-create\" \"$REPO_ROOT\" \"$BRANCH\" \"\" \"$WORKTREE_DIR\""
+      echo "═══════════════════════════════════════════════════════════════"
+      echo ""
+    } >&2
+    echo "$WORKTREE_DIR"
+    exit 3
   fi
 else
   if [[ -f "$REPO_ROOT/mix.exs" ]]; then
