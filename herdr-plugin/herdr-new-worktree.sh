@@ -120,26 +120,37 @@ if [ -z "$BRANCH" ]; then
   [ -n "$BRANCH" ] || { echo "No branch name given." >&2; exit 1; }
 
   # --- stage 2: pick the base ref -------------------------------------------
-  # Pins: current HEAD, then default branch; then remaining local branches newest
-  # first. Rows are tab-delimited REF \t ANNOTATION; both columns are shown.
-  base_rows="$CUR_REF"$'\t'"(current HEAD)"
+  # Pins first (current HEAD, then default branch — emphasized), then the rest of
+  # the local branches newest-first. Each row is DISPLAY<TAB>REF: fzf renders the
+  # ANSI-colored DISPLAY (--ansi --with-nth=1) while we recover the CLEAN REF from
+  # field 2, so color codes can never leak into the value we hand to git.
+  CSI=$'\033['
+  C_PIN="${CSI}1;38;5;173m"   # bold terracotta — matches the prompt's branch color
+  C_DIM="${CSI}2m"
+  C_RST="${CSI}0m"
+  base_row() {  # ref, annotation, is_pin  ->  "DISPLAY\tREF"
+    local pad; pad="$(printf '%-28s' "$1")"
+    if [ "$3" = 1 ]; then printf '%s%s  %s%s\t%s' "$C_PIN" "$pad" "$2" "$C_RST" "$1"
+    else                  printf '%s  %s%s%s\t%s' "$pad" "$C_DIM" "$2" "$C_RST" "$1"; fi
+  }
+  base_rows="$(base_row "$CUR_REF" "(current HEAD)" 1)"
   [ -n "$DEF_BRANCH" ] && [ "$DEF_BRANCH" != "$CUR_REF" ] \
-    && base_rows="$base_rows"$'\n'"$DEF_BRANCH"$'\t'"(default branch)"
+    && base_rows="$base_rows"$'\n'"$(base_row "$DEF_BRANCH" "(default branch)" 1)"
   while IFS=$'\t' read -r rb rd; do
     [ -n "$rb" ] || continue
     [ "$rb" = "$CUR_REF" ] && continue
     [ "$rb" = "$DEF_BRANCH" ] && continue
-    base_rows="$base_rows"$'\n'"$rb"$'\t'"$rd"
+    base_rows="$base_rows"$'\n'"$(base_row "$rb" "$rd" 0)"
   done < <(git -C "$SRC" for-each-ref --sort=-committerdate \
              --format='%(refname:short)'$'\t''%(committerdate:relative)' refs/heads/)
 
   fzf_capture BSEL <<<"$base_rows" \
-    --layout=reverse --border --delimiter=$'\t' --with-nth=1,2 \
+    --ansi --layout=reverse --border --delimiter=$'\t' --with-nth=1 \
     --prompt="base for '$BRANCH' ▸ " \
     --header='Enter: base the new worktree on this ref · type a tag/sha to use it' \
     --print-query
   BQUERY="$(sed -n 1p <<<"$BSEL")"
-  BCHOSEN="$(sed -n 2p <<<"$BSEL" | cut -f1)"
+  BCHOSEN="$(sed -n 2p <<<"$BSEL" | cut -f2)"
   BASE="${BCHOSEN:-$BQUERY}"
   [ -n "$BASE" ] || BASE="$CUR_REF"   # nothing picked/typed → base off current HEAD
 fi
