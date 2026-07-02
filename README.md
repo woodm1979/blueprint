@@ -110,9 +110,11 @@ pipeline — one code path whether Claude or herdr makes the worktree.
 
 Two parts:
 
-- **`herdr-new-worktree.sh`** — creates a worktree the blueprint way (layout-aware
-  path + full provisioning) then attaches herdr to it via `herdr worktree open`. Bind
-  it to a `type = "pane"` keybinding in `~/.config/herdr/config.toml`:
+- **`herdr-new-worktree.sh`** — an fzf worktree launcher: pick an existing worktree to
+  open (it nests as a sub-workspace via `herdr worktree open`) or type a name to create a
+  new one the blueprint way (layout-aware path + full provisioning), choosing its base ref
+  from a list. Needs `fzf` + `jq` on PATH. Bind it to a `type = "pane"` keybinding in
+  `~/.config/herdr/config.toml`:
   ```toml
   [[keys.command]]
   key = "prefix+ctrl+w"
