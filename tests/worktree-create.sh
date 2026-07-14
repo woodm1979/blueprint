@@ -526,4 +526,91 @@ EOF
   cleanup "$repo"
 }
 
+# --- Test 16: Hook handles bare-container layout (cwd = bare repo, not a worktree) ---
+# Reproduces the sigma failure: WorktreeCreate fires with .cwd = the container base dir,
+# which resolves to the bare repo — `git rev-parse --show-toplevel` is fatal there. The
+# hook must fall back to an existing checked-out worktree and succeed.
+{
+  src=$(setup_repo)
+  # Gitignored .env, present in the default-branch checkout — proves provisioning ran
+  # with a real (checked-out) REPO_ROOT, not the bare dir.
+  echo ".env" >> "$src/.gitignore"
+  git -C "$src" add .gitignore
+  git -C "$src" commit -q -m "ignore .env"
+
+  container=$(mktemp -d)
+  git clone -q --bare "$src" "$container/.bare"
+  # Root .git pointer file → git run from the container resolves to the bare repo. This
+  # is what makes --show-toplevel fatal, exactly like sigma.
+  echo "gitdir: ./.bare" > "$container/.git"
+  default_branch=$(git -C "$container/.bare" symbolic-ref --short HEAD)
+  git -C "$container/.bare" worktree add -q "$container/$default_branch" >/dev/null 2>&1
+  echo "secret" > "$container/$default_branch/.env"
+
+  hook_script="$REPO_ROOT/hooks/worktree-create.sh"
+  set +e
+  stderr_output=$(echo "{\"cwd\": \"$container\", \"name\": \"Deps-Automation\"}" | bash "$hook_script" 2>&1 1>/dev/null)
+  rc=$?
+  set -e
+
+  if [[ "$rc" -eq 0 ]]; then
+    pass "bare layout via hook: exits 0 (no 'must be run in a work tree' fatal)"
+  else
+    fail "bare layout via hook: exits 0 (rc=$rc, stderr: $stderr_output)"
+  fi
+
+  expected_wt="$container/deps_automation"
+  if [[ -d "$expected_wt" ]] && git -C "$container/.bare" worktree list | grep -q "$expected_wt"; then
+    pass "bare layout via hook: worktree created at <container>/<slug>"
+  else
+    fail "bare layout via hook: worktree created at <container>/<slug> (expected $expected_wt)"
+  fi
+
+  # New branch bases off the default branch (main), per confirmed semantics.
+  if [[ -d "$expected_wt" ]] &&
+     [[ "$(git -C "$expected_wt" rev-parse HEAD)" == "$(git -C "$container/.bare" rev-parse "$default_branch")" ]]; then
+    pass "bare layout via hook: new branch based off default branch"
+  else
+    fail "bare layout via hook: new branch based off default branch"
+  fi
+
+  # Provisioning ran with a checked-out REPO_ROOT → the gitignored .env was copied in.
+  if [[ -f "$expected_wt/.env" && "$(cat "$expected_wt/.env")" == "secret" ]]; then
+    pass "bare layout via hook: provisioned from a real worktree (.env copied)"
+  else
+    fail "bare layout via hook: provisioned from a real worktree (.env copied)"
+  fi
+
+  rm -rf "$src" "$container"
+}
+
+# --- Test 17: Hook from inside a bare-layout worktree bases off THAT worktree's branch ---
+{
+  src=$(setup_repo)
+  container=$(mktemp -d)
+  git clone -q --bare "$src" "$container/.bare"
+  echo "gitdir: ./.bare" > "$container/.git"
+  default_branch=$(git -C "$container/.bare" symbolic-ref --short HEAD)
+  git -C "$container/.bare" worktree add -q "$container/$default_branch" >/dev/null 2>&1
+  # A feature worktree on its own branch, one commit ahead of the default branch.
+  git -C "$container/.bare" worktree add -q -b feature-x "$container/feature-x" >/dev/null 2>&1
+  echo "change" > "$container/feature-x/marker.txt"
+  git -C "$container/feature-x" add marker.txt
+  git -C "$container/feature-x" commit -q -m "feature commit"
+
+  hook_script="$REPO_ROOT/hooks/worktree-create.sh"
+  echo "{\"cwd\": \"$container/feature-x\", \"name\": \"child\"}" | bash "$hook_script" >/dev/null 2>&1
+
+  child_wt="$container/child"
+  # cwd IS a worktree → --show-toplevel succeeds → base off feature-x, not the default.
+  if [[ -d "$child_wt" ]] &&
+     [[ "$(git -C "$child_wt" rev-parse HEAD)" == "$(git -C "$container/feature-x" rev-parse HEAD)" ]]; then
+    pass "bare layout via hook from a worktree: new branch bases off that worktree's branch"
+  else
+    fail "bare layout via hook from a worktree: new branch bases off that worktree's branch"
+  fi
+
+  rm -rf "$src" "$container"
+}
+
 summarize
