@@ -11,7 +11,7 @@ description: Execute one PLAN section via subagent chain. Outputs SECTION_COMPLE
 
 1. Discovers the PLAN file.
 2. Selects the next `[ ] not started` section.
-3. Runs the full section lifecycle in the foreground — captures pre-section SHA, dispatches implementer, dispatches spec-compliance reviewer, dispatches code-quality reviewer, handles remediation if needed.
+3. Runs the full section lifecycle in the foreground — captures pre-section SHA, dispatches implementer, dispatches both reviewers (spec-compliance + code-quality) in parallel, handles remediation if needed.
 4. On approval, updates the PLAN file (status, acceptance criteria boxes, completion log, `Last touched:`) and commits.
 5. Outputs exactly one of: `SECTION_COMPLETE`, `ALL_SECTIONS_COMPLETE`, or `BLOCKED: <reason>`.
 
@@ -132,9 +132,15 @@ Fix issues now before reporting.
 - **BLOCKED:** Context problem → re-dispatch with more context; needs more reasoning → re-dispatch with more capable model; section too large or plan wrong → stop with `BLOCKED: <reason>`. Never re-dispatch unchanged.
 - **API/socket error or no structured result:** Reconcile before any re-dispatch — run `git log --oneline <pre_sha>..HEAD` and `git status`, compare against the acceptance criteria, determine what was actually completed, then re-dispatch only the remaining work. Never blind-retry an unchanged prompt.
 
-## Phase 3 — Dispatch spec-compliance reviewer (opus)
+## Phase 3 — Dispatch both reviewers in parallel (opus)
 
-Dispatch a general-purpose subagent with model `opus`. Use this prompt:
+Dispatch **both** reviewer subagents below — spec-compliance and code-quality — in a **single message with two tool calls** so they run concurrently. Both are general-purpose subagents with model `opus`. Do not gate one behind the other; do not run them in sequence.
+
+Collect both results before proceeding to Phase 4.
+
+### Reviewer 1 — spec-compliance
+
+Use this prompt:
 
 ---SPEC REVIEWER PROMPT START---
 You are a spec-compliance reviewer for Section <N>: <Title>. Flag only deviations from the spec — do NOT suggest improvements beyond it.
@@ -183,14 +189,12 @@ End with exactly one of:
 - `NEEDS FIXES` followed by a numbered list of fixes
 ---SPEC REVIEWER PROMPT END---
 
-## Phase 4 — Dispatch code-quality reviewer (opus)
+### Reviewer 2 — code-quality
 
-Only if Phase 3 returned `APPROVED`.
-
-Dispatch a general-purpose subagent with model `opus`. Use this prompt:
+Dispatched in the same message as Reviewer 1 (above) — the two run in parallel. Use this prompt:
 
 ---QUALITY REVIEWER PROMPT START---
-You are a code-quality reviewer for Section <N>: <Title>. A separate reviewer has already verified spec compliance — focus on craft.
+You are a code-quality reviewer for Section <N>: <Title>. A separate reviewer is checking spec compliance in parallel — focus on craft here; don't re-audit spec fit.
 
 ## Repo root
 <absolute-path>
@@ -219,18 +223,18 @@ End with exactly one of:
 - `NEEDS FIXES` followed by a numbered list of BLOCKING fixes
 ---QUALITY REVIEWER PROMPT END---
 
-## Phase 5 — Remediation (only if a reviewer returns NEEDS FIXES)
+## Phase 4 — Remediation (only if a reviewer returns NEEDS FIXES)
 
-Dispatch a fresh general-purpose subagent (same model as implementer). Pass:
+If either reviewer returns `NEEDS FIXES`, dispatch a fresh general-purpose subagent (same model as implementer). Pass:
 - Section title + "What to build" + acceptance criteria + architectural decisions
 - `pre_sha` and repo/plan paths
-- The specific `NEEDS FIXES` list
+- The **merged** `NEEDS FIXES` list from both reviewers (dedupe overlapping items)
 
 Instruction: fix the listed items only; do not introduce changes beyond the list; re-run tests; commit.
 
-Re-dispatch the rejecting reviewer after remediation. If both reviewers eventually `APPROVED`, proceed to Phase 6. If the same reviewer rejects twice, stop with `BLOCKED: <reviewer rejection summary>`.
+After remediation, re-dispatch **only the reviewer(s) that returned `NEEDS FIXES`** — in parallel if both did. If both reviewers eventually `APPROVED`, proceed to Phase 5. If the same reviewer rejects twice, stop with `BLOCKED: <reviewer rejection summary>`.
 
-## Phase 6 — Handle approval result
+## Phase 5 — Handle approval result
 
 When both reviewers return `APPROVED`, record:
 - All commit SHAs since `pre_sha` (from `git log --oneline <pre_sha>..HEAD`)
