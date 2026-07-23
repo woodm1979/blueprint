@@ -97,7 +97,18 @@ If `docs/ai-plans/` doesn't exist, create it. Write the PRD using the template i
 
 ### Step 5 — Section breakdown (tracer-bullet vertical slices)
 
-Present a proposed list of sections. Each section must be a **thin, demoable vertical slice** that cuts end-to-end through every layer the feature touches (schema → API → UI → tests). Horizontal slices are explicitly disallowed: a section shaped like "Phase 1 = all schema, Phase 2 = all API, Phase 3 = all UI" is wrong — it prevents any section from being demonstrated or tested independently.
+Draft a list of sections, then present it for approval. Each section must be a **thin, demoable vertical slice** that cuts end-to-end through every layer the feature touches (schema → API → UI → tests). Horizontal slices are explicitly disallowed: a section shaped like "Phase 1 = all schema, Phase 2 = all API, Phase 3 = all UI" is wrong — it prevents any section from being demonstrated or tested independently.
+
+**Grounding gate — run after drafting the breakdown, before presenting it.** `/brainstorm` resolves intent; it deliberately does not map implementation surface. So a large breakdown can be sliced on incomplete knowledge of the code, and a mis-drawn slice surfaces later as a `BLOCKED: plan wrong` in `/build`. Check two triggers against your draft:
+
+- it has **more than 5 sections**, OR
+- it names any subsystem/module that was **not already read during `/brainstorm`**.
+
+If **either** is true, ground the slices against the real code before presenting them. Dispatch a handful of `Explore` subagents **in a single message** — one per distinct area the breakdown touches (a layer, module, or integration point). Instruct each to return a **terse, structured** summary only: relevant files/interfaces, patterns to follow, and anything that contradicts a proposed slice. Do not ask for prose walkthroughs — you want the minimum that lets you correct section boundaries while keeping this conversation lean.
+
+Use their findings to fix the draft before presenting: split slices that cross a seam you missed, merge slices that touch the same code, and correct the **file structure** and **architectural decisions** blocks accordingly. If the surface is too large or unfamiliar to map with a fixed batch of `Explore` agents, say so to the user and offer to ground it with a workflow instead.
+
+If **neither** trigger fires, skip grounding and present the draft directly.
 
 For each section in the proposal, show:
 
