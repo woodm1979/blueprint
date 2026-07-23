@@ -22,7 +22,7 @@ This skill handles both new features and extensions to existing PRD+PLAN pairs.
 |---|---|
 | `/brainstorm` | Intake — structured interview, decision summary, artifact gate |
 | `/blueprint` (this skill) | File-creation — writes PRD.md + PLAN.md from brainstorm context |
-| `/build` | Executor — runs each section in a fresh subagent with 2-stage review |
+| `/build` | Executor — runs sections in the foreground; each dispatches a subagent implementer + two parallel reviewers |
 
 ## Embedded principles
 
@@ -147,7 +147,7 @@ Everything else is `sonnet`.
 
 **Before writing (new and extension both):** Determine the worktree path.
 
-1. Derive the slug: the middle portion of the PLAN filename between the ISO date and `-PLAN.md`. Example: `2026-04-23-auth_flow-PLAN.md` → `auth_flow`. Sanitize: replace every character outside `[a-z0-9_]` (including `/` and any stray `-`) with `_`, so the branch name equals the bare-layout worktree directory name.
+1. Derive the slug: the middle portion of the PLAN filename between the ISO date and `-PLAN.md`. Example: `2026-04-23-auth_flow-PLAN.md` → `auth_flow`. Sanitize: replace every character outside `[a-z0-9_]` (including `/` and any stray `-`) with `_` (see Step 4 for why underscore-only).
 2. Check whether a branch named `<slug>` already exists (`git branch --list <slug>`). If it does, append `_2`, `_3`, … until a free name is found. This is the **worktree name**.
 3. Compute the **worktree path**: `$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/<worktree-name>`.
 4. Call `AskUserQuestion`:
@@ -174,7 +174,7 @@ Everything else is `sonnet`.
 
 - Header with cross-reference to the PRD and the confirmed `Worktree:` path (omit if skipped).
 - `## Architectural decisions` section (distilled from conversation context).
-- `## Conventions` section (TDD per section, one commit minimum, 2-stage review, default model `sonnet`).
+- `## Conventions` section (TDD per section, one commit minimum, two parallel reviewers, default model `sonnet`).
 - One `## Section N: <Title>` block per approved section, each with `Status: [ ] not started`, `Model:` field, "What to build", acceptance criteria checkboxes, notes for executor, empty completion log.
 
 **Extension:** Append new sections starting from next available section number. Bump `Last touched:` in the PLAN header. Re-run the worktree confirmation above; if the PLAN already has a `Worktree:` line, show that path as the default option.
@@ -244,7 +244,7 @@ This offer is non-blocking: if the user declines, handoff proceeds normally. `CO
 
 End with exactly this message (substitute the real file paths):
 
-> **REQUIRED NEXT SKILL:** Run `/build` with the PLAN file below. Each section will run in a fresh subagent with 2-stage review.
+> **REQUIRED NEXT SKILL:** Run `/build` with the PLAN file below. Each section runs in the foreground with a subagent implementer and two parallel reviewers.
 >
 > Worktree: `<absolute-path-to-worktree>`
 >
