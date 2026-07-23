@@ -80,7 +80,7 @@ Derive the PRD outline from the conversation context. Present it to the user for
 
 ### Step 4 — Write PRD
 
-Derive a slug from the feature name (lowercase, hyphenated, ≤ 5 words). Target path: `docs/ai-plans/<today's-ISO-date>-<slug>-PRD.md`.
+Derive a slug from the feature name (lowercase `snake_case` — words joined by `_`, no hyphens, ≤ 5 words). This same slug becomes the git branch **and** worktree directory name (Step 6); in the bare-repo layout the worktree dir name is reused verbatim in Postgres identifiers (which forbid hyphens), so the slug must stay underscore-only to keep branch name == worktree dir name. Target path: `docs/ai-plans/<today's-ISO-date>-<slug>-PRD.md`.
 
 **Before writing**, check whether `docs/ai-plans/` appears in any `.gitignore` in the repo (including parent repos). If it does, `AskUserQuestion`:
 
@@ -136,8 +136,8 @@ Everything else is `sonnet`.
 
 **Before writing (new and extension both):** Determine the worktree path.
 
-1. Derive the slug: the middle portion of the PLAN filename between the ISO date and `-PLAN.md`. Example: `2026-04-23-auth-flow-PLAN.md` → `auth-flow`. Sanitize: replace every `/` with `-`.
-2. Check whether a branch named `<slug>` already exists (`git branch --list <slug>`). If it does, append `-2`, `-3`, … until a free name is found. This is the **worktree name**.
+1. Derive the slug: the middle portion of the PLAN filename between the ISO date and `-PLAN.md`. Example: `2026-04-23-auth_flow-PLAN.md` → `auth_flow`. Sanitize: replace every character outside `[a-z0-9_]` (including `/` and any stray `-`) with `_`, so the branch name equals the bare-layout worktree directory name.
+2. Check whether a branch named `<slug>` already exists (`git branch --list <slug>`). If it does, append `_2`, `_3`, … until a free name is found. This is the **worktree name**.
 3. Compute the **worktree path**: `$(dirname "$REPO_ROOT")/$(basename "$REPO_ROOT")-worktrees/<worktree-name>`.
 4. Call `AskUserQuestion`:
    > Question: "I'll create a worktree for this feature at `<worktree-path>` (branch `<worktree-name>`). How should I proceed?"

@@ -47,8 +47,8 @@ The worktree lifecycle is split into three orthogonal concerns, each with a sens
 
 The path is tool-owned; you don't override it with a script. The default depends on layout:
 
-- **Standard repo:** `<parent-dir>/<repo-name>-worktrees/<feature-slug>` — e.g. a repo at `/home/user/myapp` puts `feature-auth` at `/home/user/myapp-worktrees/feature-auth`.
-- **Bare repo** (a `.bare` git dir with sibling worktrees): `<container>/<slug>` alongside `.bare`, where `slug` lowercases the branch and maps anything outside `[a-z0-9_]` to `_` (`Feature-Auth` → `feature_auth`). The branch name itself is preserved.
+- **Standard repo:** `<parent-dir>/<repo-name>-worktrees/<feature-slug>` — e.g. a repo at `/home/user/myapp` puts `feature_auth` at `/home/user/myapp-worktrees/feature_auth`.
+- **Bare repo** (a `.bare` git dir with sibling worktrees): `<container>/<slug>` alongside `.bare`, where `slug` lowercases the branch and maps anything outside `[a-z0-9_]` to `_` (`Feature-Auth` → `feature_auth`). Blueprint generates `snake_case` slugs (see `/blueprint` Step 4), so the branch it creates already matches the directory name; this mapping is a safety net for manually-named branches that don't conform.
 
 The final worktree path is printed as the **last stdout line** (all progress goes to stderr).
 
