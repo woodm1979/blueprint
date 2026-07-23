@@ -16,10 +16,10 @@ skill_contains '> Worktree: <absolute-path-to-worktree>' \
   && pass "PLAN template contains Worktree: header line" \
   || fail "PLAN template missing Worktree: header line"
 
-# AC: Step 6.5 exists and writes Worktree: before the Step 8 commit
-skill_contains 'Step 6.5' \
-  && pass "Step 6.5 is present" \
-  || fail "Step 6.5 is missing"
+# AC: Step 6 determines/writes the Worktree: path before the Step 8 commit
+skill_contains 'Determine the worktree path' \
+  && pass "Step 6 determines the worktree path" \
+  || fail "Step 6 worktree-path determination is missing"
 
 skill_contains '> Executor: /build' \
   && pass "PLAN template has Executor: /build line" \
@@ -30,8 +30,8 @@ skill_contains "replace every" \
   && pass "Slug sanitization instruction present" \
   || fail "Slug sanitization instruction missing"
 
-# AC: Collision avoidance — counter suffix
-skill_contains 'append \`-2\`' || skill_contains "append \`-2\`" || grep -qF 'append `-2`' "$SKILL" \
+# AC: Collision avoidance — counter suffix (snake_case: _2, _3, …)
+skill_contains 'append `_2`' \
   && pass "Counter suffix collision avoidance present" \
   || fail "Counter suffix collision avoidance missing"
 
@@ -58,15 +58,15 @@ skill_contains 'Worktree: `<absolute-path-to-worktree>`' \
   && pass "Step 10 handoff shows worktree path" \
   || fail "Step 10 handoff missing worktree path"
 
-# Step ordering: 6.5 must appear after Step 6 and before Step 7
+# Step ordering: the worktree path must be determined (Step 6) before the Step 8 commit
 line_6=$(grep -n '### Step 6 —' "$SKILL" | head -1 | cut -d: -f1)
-line_65=$(grep -n '### Step 6.5' "$SKILL" | head -1 | cut -d: -f1)
-line_7=$(grep -n '### Step 7 —' "$SKILL" | head -1 | cut -d: -f1)
-if [[ -n "$line_6" && -n "$line_65" && -n "$line_7" ]] && \
-   [[ "$line_6" -lt "$line_65" && "$line_65" -lt "$line_7" ]]; then
-  pass "Step 6.5 is ordered between Step 6 and Step 7"
+line_wt=$(grep -n 'Determine the worktree path' "$SKILL" | head -1 | cut -d: -f1)
+line_8commit=$(grep -n '### Step 8 —' "$SKILL" | head -1 | cut -d: -f1)
+if [[ -n "$line_6" && -n "$line_wt" && -n "$line_8commit" ]] && \
+   [[ "$line_6" -le "$line_wt" && "$line_wt" -lt "$line_8commit" ]]; then
+  pass "Worktree path is determined in Step 6, before the Step 8 commit"
 else
-  fail "Step 6.5 ordering is wrong (6=$line_6, 6.5=$line_65, 7=$line_7)"
+  fail "Worktree-path ordering is wrong (6=$line_6, wt=$line_wt, 8=$line_8commit)"
 fi
 
 # Step ordering: 8.5 must appear after Step 8 and before Step 9

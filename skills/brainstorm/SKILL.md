@@ -15,7 +15,7 @@ Primary intake skill of the blueprint suite. Interviews the user through a relen
 |---|---|
 | `/brainstorm` (this skill) | Intake — structured interview, decision summary, artifact gate |
 | `/blueprint` | File-creation — writes PRD.md + PLAN.md from brainstorm context |
-| `/build` | Executor — runs each section in a fresh subagent with 2-stage review |
+| `/build` | Executor — runs sections in the foreground; each dispatches a subagent implementer + two parallel reviewers |
 
 ## Plan-mode compatibility
 
@@ -54,8 +54,11 @@ These rules apply to EVERY user-facing message during intake. Violating any of t
 - About to send an `AskUserQuestion` call without a `"Let's discuss"` option → add it.
 - About to call `AskUserQuestion` immediately after a "Let's discuss" selection without first asking an open question → stop.
 - About to add an option not defined in the skill spec (e.g., "Chat about this", "Skip interview and plan immediately") → remove it.
+- About to ask an architecture/non-obvious decision without a preceding tradeoff table → add the table.
 - About to announce a design before asking the user anything → back up.
 - solution proposed before problem questions exhausted → defer: finish the problem branch first.
+- About to do broad codebase recon before asking the user anything → stop.
+- About to write any file, make any commit, or create any GitHub issue → stop (that's `/blueprint`'s job).
 
 ## Process
 
@@ -105,15 +108,6 @@ If **Let's discuss**, respond with "What's on your mind?" as plain prose and wai
 ## Precedence
 
 If a repo's `CLAUDE.md`, `AGENTS.md`, or explicit user instructions conflict with this skill, user instructions win. Read those files before starting the interview.
-
-## Red flags — STOP
-
-- More than one `?` in a single user-facing message
-- Inline numbered options instead of `AskUserQuestion`
-- `AskUserQuestion` without a `"Let's discuss"` option
-- Architecture decision asked without a preceding 2-3-approach tradeoff table
-- Broad codebase recon before asking the user anything
-- Writing any file, making any commit, or creating any GitHub issue
 
 ## When NOT to use
 
