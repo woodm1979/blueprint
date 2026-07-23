@@ -13,7 +13,7 @@ File-creation skill of the blueprint suite. Reads the current conversation (typi
 - **PLAN** — the implementation plan: architectural decisions + a series of tracer-bullet vertical-slice sections, each with acceptance criteria, implementer-model guidance, and an empty completion log.
 - **DDR** — the design decision record: a high-signal, per-feature log of the non-obvious forks (and, later, mid-build supersessions), each with its rejected alternatives and a falsifiable "if we flipped this" note. Seeded here from the brainstorm transcript; appended to by `/build-step`.
 
-After the two files are written, committed, and self-reviewed, hand off to `/build` for section-by-section execution with fresh-context subagents.
+After the three artifacts are written, committed, and self-reviewed, hand off to `/build` for section-by-section execution with fresh-context subagents.
 
 This skill handles both new features and extensions to existing PRD+PLAN pairs.
 
@@ -22,7 +22,7 @@ This skill handles both new features and extensions to existing PRD+PLAN pairs.
 | Skill | Role |
 |---|---|
 | `/brainstorm` | Intake — structured interview, decision summary, artifact gate |
-| `/blueprint` (this skill) | File-creation — writes PRD.md + PLAN.md from brainstorm context |
+| `/blueprint` (this skill) | File-creation — writes PRD.md + PLAN.md + DDR.md from brainstorm context |
 | `/build` | Executor — runs sections in the foreground; each dispatches a subagent implementer + two parallel reviewers |
 
 ## Embedded principles
@@ -188,14 +188,15 @@ With the PRD+PLAN drafted, write `docs/ai-plans/<date>-<slug>-DDR.md` (same date
 
 **Entry threshold — non-obvious forks only.** A decision earns a `DDR-N` entry only if it was a genuine fork: something that warranted a tradeoff table or an `AskUserQuestion` during brainstorm/blueprint, where a competent engineer could reasonably have gone the other way. Obvious choices — the one sensible option, framework defaults, anything a reader would infer straight from the resulting code — never become entries. Number entries `DDR-1..N` within this feature only; there is no global registry.
 
-**Signal-to-noise gates (hard rules).** Run every candidate entry through all four gates. A candidate that fails *any* gate is cut, not softened:
+**Signal-to-noise cut-gates (hard rules).** Run every candidate entry through these three gates. A candidate that fails *any* gate is cut, not softened:
 
 1. **Invisible-in-diff** — record only what a reader could *not* reconstruct by reading the resulting code. If the "why" is already visible in the diff, drop the entry.
 2. **Required, falsifiable `If-flipped`** — every entry must state, falsifiably, what concretely changes if the opposite fork were taken (which code moves, which cost shifts, which behavior differs). If you cannot write a falsifiable `If-flipped`, the entry is cut.
 3. **No generic tension-language** — name the *specific* competing alternatives and the *concrete* consequence. Ban vague phrasing like "balances flexibility and simplicity"; say which named alternative loses what.
-4. **Progressive disclosure** — order the file so the header ranks the high-contention / one-way-door entries first; low-signal, two-way-door entries sit below the fold.
 
-For each surviving entry fill `Decision`, `Tension`, `Rejected`, `If-flipped`, plus the contention indicator, the door-type tag, and the tension-type tag on the heading; set `Status:` to `accepted` and leave `Touches:` as `—` (build-step fills it as sections land). Then write the progressive-disclosure header: a ranked list linking the surviving entries, one-way-door / high-contention first.
+**Progressive disclosure (ordering directive, not a cut-gate).** This is a file-level ordering rule applied to the entries that survive the cut-gates, not a per-candidate pass/fail test: order the file so the header ranks the high-contention / one-way-door entries first; low-signal, two-way-door entries sit below the fold.
+
+For each surviving entry fill `Decision`, `Tension`, `Rejected`, `If-flipped`, plus the contention indicator, the door-type tag, and the tension-type tag on the heading; set `Status:` to `accepted` and leave `Touches:` as `—` (build-step fills it as sections land). Then write the progressive-disclosure header per that ordering directive: a ranked list of the surviving entries.
 
 If *no* decision clears the threshold, still create the DDR with its header and an explicit `No seed-time entries.` note — do not pad it with obvious choices.
 
@@ -203,7 +204,7 @@ If *no* decision clears the threshold, still create the DDR with its header and 
 
 ### Step 7 — Self-review pass
 
-This is a checklist YOU run yourself — not a subagent dispatch. Scan both files with fresh eyes:
+This is a checklist YOU run yourself — not a subagent dispatch. Scan all three files with fresh eyes:
 
 1. **Spec coverage.** Walk each user story in the PRD. Can you point to a section in PLAN that delivers it? List any gaps; add sections inline if missing.
 2. **Placeholder scan.** Any `TBD`, `TODO`, `implement later`, `fill in details`, "add appropriate error handling", "similar to Section N"? Fix them.
@@ -404,9 +405,9 @@ Each entry heading takes the canonical form `### DDR-N: <title> · <contention i
 high-contention first, low-signal / two-way-door below. This is the "read these
 first" index; the full entries live under it.>
 
-1. [DDR-2](#ddr-2) — 🔴 one-way — <title>
-2. [DDR-1](#ddr-1) — 🟡 one-way — <title>
-3. [DDR-3](#ddr-3) — 🟢 two-way — <title>
+1. DDR-2 — <title> · 🔴 high · one-way
+2. DDR-1 — <title> · 🟡 contested · one-way
+3. DDR-3 — <title> · 🟢 uncontested · two-way
 
 ---
 
