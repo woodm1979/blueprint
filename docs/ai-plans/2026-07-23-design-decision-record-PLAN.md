@@ -31,7 +31,7 @@
 
 ## Section 1: Blueprint seeds the gated DDR + cross-links PLAN
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** opus
 **User stories covered:** 1, 2, 5, 6
 
@@ -41,12 +41,12 @@ Edit `skills/blueprint/SKILL.md` so that, from an existing brainstorm conversati
 
 ### Acceptance criteria
 
-- [ ] `skills/blueprint/SKILL.md` contains a DDR file template exposing every schema field: `Decision`, `Tension`, `Rejected`, `If-flipped`, `Touches`, a contention indicator, a door-type tag, and `Status` with supersession.
-- [ ] SKILL.md contains a step instructing that a `docs/ai-plans/<date>-<slug>-DDR.md` be written, seeded from the brainstorm transcript, and committed together with the PRD+PLAN.
-- [ ] SKILL.md states the non-obvious-forks-only threshold and all four S/N gates (invisible-in-diff, required-falsifiable If-flipped, no-generic-tension-language, progressive-disclosure header).
-- [ ] The Step 7 self-review list contains an adversarial-prune item that challenges each DDR entry as possible padding.
-- [ ] The PLAN template's `## Architectural decisions` section documents the `(see DDR-N)` backlink convention.
-- [ ] `tests/ddr-blueprint.sh` exists, sources `tests/helpers.sh`, asserts all of the above with `pass`/`fail`, ends with `summarize`, and exits 0 when run `bash tests/ddr-blueprint.sh`.
+- [x] `skills/blueprint/SKILL.md` contains a DDR file template exposing every schema field: `Decision`, `Tension`, `Rejected`, `If-flipped`, `Touches`, a contention indicator, a door-type tag, and `Status` with supersession.
+- [x] SKILL.md contains a step instructing that a `docs/ai-plans/<date>-<slug>-DDR.md` be written, seeded from the brainstorm transcript, and committed together with the PRD+PLAN.
+- [x] SKILL.md states the non-obvious-forks-only threshold and all four S/N gates (invisible-in-diff, required-falsifiable If-flipped, no-generic-tension-language, progressive-disclosure header).
+- [x] The Step 7 self-review list contains an adversarial-prune item that challenges each DDR entry as possible padding.
+- [x] The PLAN template's `## Architectural decisions` section documents the `(see DDR-N)` backlink convention.
+- [x] `tests/ddr-blueprint.sh` exists, sources `tests/helpers.sh`, asserts all of the above with `pass`/`fail`, ends with `summarize`, and exits 0 when run `bash tests/ddr-blueprint.sh`.
 
 ### Notes for executor
 
@@ -58,10 +58,9 @@ Edit `skills/blueprint/SKILL.md` so that, from an existing brainstorm conversati
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: `b5ee659` (implement), `f1d949a` (remediate coherence)
+- Tests added: `tests/ddr-blueprint.sh` (26 grep/ordering assertions, exit 0)
+- Deviations from plan: Seeding step named **Step 6.7** (not 6.5) to avoid colliding with an unrelated pre-existing `tests/blueprint-skill.sh` reference; the test greps the phrase `Seed the DDR`, so numbering isn't load-bearing. Post-review coherence remediation fixed a self-introduced "two files" vs "three artifacts" contradiction, re-framed Gate 4 (progressive disclosure) as an ordering directive rather than a per-candidate cut-gate, and replaced a dead `#ddr-N` anchor in the template example with a plain ranked list. Deferred cosmetic nit: contention labels (`high`/`contested`/`uncontested`) aren't a perfectly parallel ordinal triple. NOTE: `tests/blueprint-skill.sh` fails on a **pre-existing** `Step 6.5 is missing` assertion, unrelated to this change (verified absent at pre_sha) — flagged for separate fix.
 
 ---
 
