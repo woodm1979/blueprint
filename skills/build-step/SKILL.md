@@ -243,7 +243,7 @@ When both reviewers return `APPROVED`, record:
 
 Proceed to Step 4.
 
-## Step 4 — Update the plan file
+## Step 4 — Update the plan file and DDR
 
 Edit the PLAN file with the Edit tool:
 
@@ -255,7 +255,27 @@ Edit the PLAN file with the Edit tool:
   - `Deviations from plan: <deviations from result>`
 - Bump the `Last touched:` header to today's date
 
-Commit with message `build: complete Section <N> (<Title>)`. No attribution trailers.
+### Append to the DDR
+
+This DDR maintenance is done by **you, the `/build-step` foreground controller** — never the implementer subagent. It happens here, in the same phase where you update the PLAN completion log, using the results the subagents reported.
+
+Derive the DDR path from the PLAN path: replace the trailing `-PLAN.md` with `-DDR.md` in the same `docs/ai-plans/` directory (e.g. `2026-07-23-auth-flow-PLAN.md` → `2026-07-23-auth-flow-DDR.md`). If that file is absent, blueprint seeded no DDR — skip the DDR edits and the `Refs:` line silently.
+
+Make two edits to the DDR with the Edit tool:
+
+1. **Fill `Touches:` on the entries this section landed.** For every existing DDR entry whose decision this section implemented, replace its seeded placeholder `**Touches:** —` with the concrete files/functions the section produced (e.g. `**Touches:** skills/build-step/SKILL.md Step 4; tests/ddr-build-step.sh`). This is the build-time half of the `**Touches:**` field, which blueprint seeded as `—`.
+
+2. **Append a new entry only for a genuine mid-build fork.** Apply the *same non-obvious forks only threshold and signal-to-noise gates as seed-time*: append a new `### DDR-N: <title> · <contention> · <door-type> · <tension-type>` entry (continuing the feature's `DDR-1..N` numbering) only when the section surfaced a genuinely new fork, recorded dissent, or **superseded** a prior decision. On a supersession, also flip the superseded entry's `**Status:**` to `superseded by DDR-N`. Fill `**Decision:**`, `**Tension:**`, `**Rejected:**`, `**If-flipped:**` (falsifiable, or the entry is cut) and `**Touches:**`, then re-rank the progressive-disclosure header. Keep routine deviations out: the ordinary "implemented X a little differently than planned" is **not** a fork — those stay in the PLAN completion log's `Deviations from plan:` line and never graduate to the DDR.
+
+Commit with message `build: complete Section <N> (<Title>)`, adding a `Refs: DDR-N` line naming the entries this section touched or added (comma-separate multiple, e.g. `Refs: DDR-2, DDR-5`):
+
+```
+build: complete Section <N> (<Title>)
+
+Refs: DDR-2, DDR-5
+```
+
+Omit the `Refs:` line only when the DDR file is absent or the section touched no entries. No attribution trailers.
 
 ## Step 5 — Output completion signal
 
