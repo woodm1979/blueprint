@@ -7,10 +7,11 @@ description: Write PRD.md + PLAN.md artifacts from /brainstorm context. Pairs wi
 
 ## Overview
 
-File-creation skill of the blueprint suite. Reads the current conversation (typically from a prior `/brainstorm` session) and writes two committed artifacts under `docs/ai-plans/`:
+File-creation skill of the blueprint suite. Reads the current conversation (typically from a prior `/brainstorm` session) and writes three committed artifacts under `docs/ai-plans/`:
 
 - **PRD** — the product requirements document: problem, solution, user stories, architecture sketch, testing approach, out-of-scope, open questions.
 - **PLAN** — the implementation plan: architectural decisions + a series of tracer-bullet vertical-slice sections, each with acceptance criteria, implementer-model guidance, and an empty completion log.
+- **DDR** — the design decision record: a high-signal, per-feature log of the non-obvious forks (and, later, mid-build supersessions), each with its rejected alternatives and a falsifiable "if we flipped this" note. Seeded here from the brainstorm transcript; appended to by `/build-step`.
 
 After the two files are written, committed, and self-reviewed, hand off to `/build` for section-by-section execution with fresh-context subagents.
 
@@ -181,6 +182,25 @@ Everything else is `sonnet`.
 
 Apply the acceptance-criteria coaching note from Step 5 to every section.
 
+### Step 6.7 — Seed the DDR (Design Decision Record)
+
+With the PRD+PLAN drafted, write `docs/ai-plans/<date>-<slug>-DDR.md` (same date+slug as the PRD+PLAN), seeded from the brainstorm transcript. Use the **DDR template** in **File formats** below. This is a *sibling* file — never merge it into the PLAN.
+
+**Entry threshold — non-obvious forks only.** A decision earns a `DDR-N` entry only if it was a genuine fork: something that warranted a tradeoff table or an `AskUserQuestion` during brainstorm/blueprint, where a competent engineer could reasonably have gone the other way. Obvious choices — the one sensible option, framework defaults, anything a reader would infer straight from the resulting code — never become entries. Number entries `DDR-1..N` within this feature only; there is no global registry.
+
+**Signal-to-noise gates (hard rules).** Run every candidate entry through all four gates. A candidate that fails *any* gate is cut, not softened:
+
+1. **Invisible-in-diff** — record only what a reader could *not* reconstruct by reading the resulting code. If the "why" is already visible in the diff, drop the entry.
+2. **Required, falsifiable `If-flipped`** — every entry must state, falsifiably, what concretely changes if the opposite fork were taken (which code moves, which cost shifts, which behavior differs). If you cannot write a falsifiable `If-flipped`, the entry is cut.
+3. **No generic tension-language** — name the *specific* competing alternatives and the *concrete* consequence. Ban vague phrasing like "balances flexibility and simplicity"; say which named alternative loses what.
+4. **Progressive disclosure** — order the file so the header ranks the high-contention / one-way-door entries first; low-signal, two-way-door entries sit below the fold.
+
+For each surviving entry fill `Decision`, `Tension`, `Rejected`, `If-flipped`, plus the contention indicator, the door-type tag, and the tension-type tag on the heading; set `Status:` to `accepted` and leave `Touches:` as `—` (build-step fills it as sections land). Then write the progressive-disclosure header: a ranked list linking the surviving entries, one-way-door / high-contention first.
+
+If *no* decision clears the threshold, still create the DDR with its header and an explicit `No seed-time entries.` note — do not pad it with obvious choices.
+
+**Extension:** append new qualifying entries to the existing DDR, continuing the `DDR-N` numbering, and bump its `Last touched:`; never fork a second DDR file.
+
 ### Step 7 — Self-review pass
 
 This is a checklist YOU run yourself — not a subagent dispatch. Scan both files with fresh eyes:
@@ -191,15 +211,16 @@ This is a checklist YOU run yourself — not a subagent dispatch. Scan both file
 4. **Vertical-slice check.** For each section, apply this pass/fail test: "Is each section demoable on its own without depending on a subsequent section?" PASS = the section delivers a thin end-to-end behavior you can show a user. FAIL = the section is a horizontal layer (all-schema-first, then all-API, then all-UI). If any section fails, restructure into verticals.
 5. **Model coherence.** Challenge every non-`sonnet` section against the **Model selection** rules. For each `haiku`: does it satisfy ALL three gate conditions? If a competent engineer could make a wrong choice while implementing it, it's not `haiku` — promote to `sonnet`. For each `opus`: does it match a listed trigger, or is it really routine integration work?
 6. **Acceptance-criteria externality.** Are criteria observable from the outside, or do they bake in internal implementation choices? Rewrite any that aren't externally testable.
-7. **(Extension only) Append-not-fork.** Confirm no new files were created when extending.
+7. **DDR adversarial prune.** Treat every DDR entry as guilty of padding until it proves otherwise. Challenge each one: Is it invisible-in-diff, or could a reader reconstruct it from the code? Is its `If-flipped` genuinely falsifiable and specific? Does it name concrete rejected alternatives instead of generic tension-language? Was it a real fork (tradeoff table / `AskUserQuestion`), not an obvious choice? Any entry that fails a challenge gets **cut** — a short, high-signal DDR beats a padded one. Then confirm the progressive-disclosure header still ranks one-way-door / high-contention entries first.
+8. **(Extension only) Append-not-fork.** Confirm no new files were created when extending (this includes the DDR — extension appends entries, never forks a second DDR).
 
 Fix any issues inline. No need to re-review — just fix and move on.
 
 ### Step 8 — Commit
 
-Commit both files in a single commit.
+Commit all three files (PRD + PLAN + DDR) in a single commit.
 
-- **New:** `Blueprint: <feature name> (PRD + PLAN)`
+- **New:** `Blueprint: <feature name> (PRD + PLAN + DDR)`
 - **Extension:** `Blueprint: extend <feature name> (+Section N+1...)`
 
 Do not include attribution trailers.
@@ -253,8 +274,9 @@ End with exactly this message (substitute the real file paths):
 > ```
 >
 > PRD: `docs/ai-plans/<date>-<slug>-PRD.md`
+> DDR: `docs/ai-plans/<date>-<slug>-DDR.md`
 
-The fenced block is the exact command the user can copy-paste after a `/clear`. The worktree path line tells the user which directory the build will operate in. The PRD line lets them reference the requirements doc in the new session. Do not invoke `/build` yourself.
+The fenced block is the exact command the user can copy-paste after a `/clear`. The worktree path line tells the user which directory the build will operate in. The PRD line lets them reference the requirements doc in the new session; the DDR line points at the decision rationale that `/build-step` will keep appending to. Do not invoke `/build` yourself.
 
 ## File formats
 
@@ -314,7 +336,9 @@ The fenced block is the exact command the user can copy-paste after a `/clear`. 
 
 ## Architectural decisions
 
-<Durable decisions that apply across sections — routes, schema, key models, auth approach, third-party boundaries. Derived from the PRD's module sketch + any detail added during section breakdown.>
+<Durable decisions that apply across sections — routes, schema, key models, auth approach, third-party boundaries. Derived from the PRD's module sketch + any detail added during section breakdown. Keep each entry terse and binding for implementers.>
+
+<Backlink convention: any decision that came from a non-obvious fork carries a terse `(see DDR-N)` backlink to its rationale in the feature's DDR. The PLAN block stays binding and short; the DDR owns the "why." Example: `- **Auth via signed cookies, not JWT** (see DDR-2)`.>
 
 ## Conventions
 
@@ -360,6 +384,59 @@ The fenced block is the exact command the user can copy-paste after a `/clear`. 
 ```
 
 Use literal backtick-bounded status checkboxes (`[ ]` and `[x]`) — `/build` greps for these to find the next unstarted section.
+
+### DDR template
+
+One consolidated file per feature at `docs/ai-plans/<date>-<slug>-DDR.md`, sibling to the PRD+PLAN. Entries are numbered `DDR-1..N` within this feature only (no global registry). Field names are a stable interface — `/build-step` appends entries and fills `Touches:` using exactly these labels.
+
+Each entry heading takes the canonical form `### DDR-N: <title> · <contention indicator> · <door-type> · <tension-type>`, followed by the labelled fields `**Status:**`, `**Decision:**`, `**Tension:**`, `**Rejected:**`, `**If-flipped:**`, `**Touches:**`.
+
+```markdown
+# DDR: <Feature Name>
+
+> PRD: ./<date>-<slug>-PRD.md
+> PLAN: ./<date>-<slug>-PLAN.md
+> Created: <YYYY-MM-DD>  |  Last touched: <YYYY-MM-DD>
+
+## High-signal entries (read these first)
+
+<Progressive-disclosure header — a ranked list of the entries, one-way-door /
+high-contention first, low-signal / two-way-door below. This is the "read these
+first" index; the full entries live under it.>
+
+1. [DDR-2](#ddr-2) — 🔴 one-way — <title>
+2. [DDR-1](#ddr-1) — 🟡 one-way — <title>
+3. [DDR-3](#ddr-3) — 🟢 two-way — <title>
+
+---
+
+### DDR-1: <title> · 🟡 contested · one-way · <tension-type>
+
+**Status:** accepted   <!-- or `superseded by DDR-4` once a later entry overrides it -->
+**Decision:** <the fork actually taken, one line>
+**Tension:** <the specific competing forces — name the concrete alternatives, never "tradeoffs in general">
+**Rejected:** <the specific alternative(s) not taken, and the concrete consequence of each>
+**If-flipped:** <falsifiable: what concretely changes if the opposite fork were chosen — which code moves, which cost shifts, which behavior differs. Required; no falsifiable statement → cut the entry.>
+**Touches:** —   <!-- build-step fills this with files/functions as the section lands -->
+
+### DDR-2: <title> · 🔴 high · one-way · <tension-type>
+
+**Status:** accepted
+**Decision:** ...
+**Tension:** ...
+**Rejected:** ...
+**If-flipped:** ...
+**Touches:** —
+```
+
+Heading-tag legend:
+
+- **Contention indicator** — how contested the fork was; drives header ranking. Use `🔴 high` / `🟡 contested` / `🟢 uncontested`.
+- **Door-type tag** — `one-way` (hard or expensive to reverse) or `two-way` (cheaply reversible). One-way doors rank above two-way in the header.
+- **Tension-type tag** — the axis of the tradeoff, e.g. `simplicity-vs-flexibility`, `speed-vs-safety`, `coupling-vs-duplication`.
+- **Status** — `accepted`, or `superseded by DDR-M` when a later entry in the same file overrides this decision.
+
+If nothing clears the entry threshold, the file is just the header line plus `No seed-time entries.` — never padded with obvious choices.
 
 ### GitHub issue PRD template
 
