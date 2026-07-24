@@ -57,3 +57,12 @@ High signal-to-noise is enforced by hard gates baked into the entry schema and a
 
 - [ ] `Refs: DDR-N` is per-feature-scoped, so it is ambiguous repo-wide. Accepted: commits live on the feature branch/worktree, so context disambiguates.
 - [ ] Exact format of the auto-derived progressive-disclosure header (ranked list vs. table) — settle during blueprint template authoring.
+
+## Future Considerations
+
+- **Pre-existing `tests/blueprint-skill.sh` failure (surfaced, not caused).** The suite is not fully green: `blueprint-skill.sh` asserts a `### Step 6.5` heading the blueprint skill no longer has (its worktree flow was folded into Step 6 in an earlier commit). It predates this branch and was left untouched per surgical discipline. Worth a small separate fix — update the stale assertions to match the current step layout (now including the new Step 6.7) — so `bash tests/*.sh` can be green again.
+- **Shared test helper.** The `skill_contains`/grep wrapper and the `grep -n … | head -1 | cut` line-locator idiom are now duplicated across ~5 test files. A `file_contains FILE PATTERN` + `first_match_line PATTERN FILE` pair in `tests/helpers.sh` would consolidate them — a repo-wide cleanup deliberately out of scope here.
+- **Validate the DDR on a real feature end-to-end.** This build implemented the mechanism but only self-tested via grep assertions. Run `/brainstorm → /blueprint → /build` on a genuine feature and judge whether the seeded DDR is actually high-signal in practice; tune the S/N gates (especially the falsifiable `If-flipped` bar) from real output.
+- **Inline PR/MR comments as a render target.** Deferred from brainstorm: once `Touches:` links are populated during builds, they could drive inline review comments on the exact hunks — a natural next surface for the "why."
+- **PR-body automation.** The `CLAUDE.md` note is guidance only; if it proves valuable, consider a lightweight helper that assembles the PR/MR body from the DDR's high-contention entries rather than relying on the model to remember.
+- **Cosmetic:** the contention labels (`high` / `contested` / `uncontested`) aren't a perfectly parallel ordinal triple — a later pass could align them (`high`/`medium`/`low` or `contested`/`mixed`/`uncontested`).
