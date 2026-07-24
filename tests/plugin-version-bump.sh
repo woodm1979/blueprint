@@ -15,12 +15,9 @@ marketplace_version=$(jq -r '.plugins[0].version' "$MARKETPLACE_JSON")
   && pass "plugin.json and marketplace.json versions match ($plugin_version)" \
   || fail "plugin.json ($plugin_version) and marketplace.json ($marketplace_version) versions differ"
 
-# Feature bump must land strictly above the pre-DDR-feature baseline (6.13.1).
-baseline="6.13.1"
-if [[ "$(printf '%s\n%s\n' "$baseline" "$plugin_version" | sort -V | tail -1)" == "$plugin_version" && "$plugin_version" != "$baseline" ]]; then
-  pass "plugin version ($plugin_version) incremented above baseline ($baseline)"
-else
-  fail "plugin version ($plugin_version) not incremented above baseline ($baseline)"
-fi
+# The durable invariant is lockstep between the two files. "Bump before push" is
+# enforced separately by the git-push hook (scripts/check-plugin-version-bump.sh),
+# so no static version floor is asserted here — a hardcoded baseline would be
+# trivially true forever after this release and give false confidence.
 
 summarize

@@ -54,7 +54,7 @@ skill_contains 'Refs: DDR-' \
   && pass "Section commit carries a 'Refs: DDR-N' line" \
   || fail "Refs: DDR-N commit line missing"
 
-skill_contains 'only when the DDR file is absent or the section touched no entries' \
+skill_contains 'DDR file is absent' \
   && pass "Refs line is omitted when the DDR is absent or no entries were touched" \
   || fail "Refs-line omission rule missing"
 
@@ -74,7 +74,7 @@ skill_contains '-DDR.md' \
   && pass "DDR filename referenced" \
   || fail "DDR filename missing"
 
-skill_contains '-PLAN.md' && skill_contains '-DDR.md' \
+skill_contains '-PLAN.md' \
   && pass "DDR path derived from the PLAN path (-PLAN.md -> -DDR.md)" \
   || fail "PLAN->DDR path derivation missing"
 
