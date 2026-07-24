@@ -30,8 +30,8 @@ skill_contains 'routine deviations' \
   && pass "Routine deviations named as a non-fork" \
   || fail "Routine deviations distinction missing"
 
-skill_contains 'Deviations from plan:' \
-  && pass "Routine deviations routed to the completion log" \
+skill_contains 'never graduate to the DDR' \
+  && pass "Routine deviations routed to the completion log, kept out of the DDR" \
   || fail "Completion-log routing for routine deviations missing"
 
 # --- AC2: fill Touches: with the files/functions the section produced -------
@@ -54,9 +54,9 @@ skill_contains 'Refs: DDR-' \
   && pass "Section commit carries a 'Refs: DDR-N' line" \
   || fail "Refs: DDR-N commit line missing"
 
-skill_contains 'build: complete Section <N> (<Title>)' \
-  && pass "Refs line stays compatible with the existing commit message" \
-  || fail "Existing commit message form was dropped"
+skill_contains 'only when the DDR file is absent or the section touched no entries' \
+  && pass "Refs line is omitted when the DDR is absent or no entries were touched" \
+  || fail "Refs-line omission rule missing"
 
 # --- AC4: append is done by the foreground controller, not the implementer --
 
