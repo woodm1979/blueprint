@@ -66,7 +66,7 @@ Edit `skills/blueprint/SKILL.md` so that, from an existing brainstorm conversati
 
 ## Section 2: build-step appends to the DDR + Refs in commits
 
-**Status:** [ ] not started
+**Status:** [x] complete
 **Model:** opus
 **User stories covered:** 3, 4
 
@@ -76,11 +76,11 @@ Edit `skills/build-step/SKILL.md` so the foreground controller, during a section
 
 ### Acceptance criteria
 
-- [ ] `skills/build-step/SKILL.md` instructs the controller to append a new DDR entry when a genuinely new fork / dissent / supersession arises mid-build, applying the non-obvious-forks-only threshold (routine deviations stay in the completion log, not the DDR).
-- [ ] SKILL.md instructs filling each touched DDR entry's `Touches:` field with the files/functions the section produced.
-- [ ] SKILL.md's section-commit step (Step 4 / the `build: complete Section N` commit) includes a `Refs: DDR-N` line for the related entries.
-- [ ] SKILL.md makes clear the append is done by the `/build-step` foreground controller, not the implementer subagent.
-- [ ] `tests/ddr-build-step.sh` exists, sources `tests/helpers.sh`, asserts the above, ends with `summarize`, and exits 0.
+- [x] `skills/build-step/SKILL.md` instructs the controller to append a new DDR entry when a genuinely new fork / dissent / supersession arises mid-build, applying the non-obvious-forks-only threshold (routine deviations stay in the completion log, not the DDR).
+- [x] SKILL.md instructs filling each touched DDR entry's `Touches:` field with the files/functions the section produced.
+- [x] SKILL.md's section-commit step (Step 4 / the `build: complete Section N` commit) includes a `Refs: DDR-N` line for the related entries.
+- [x] SKILL.md makes clear the append is done by the `/build-step` foreground controller, not the implementer subagent.
+- [x] `tests/ddr-build-step.sh` exists, sources `tests/helpers.sh`, asserts the above, ends with `summarize`, and exits 0.
 
 ### Notes for executor
 
@@ -92,10 +92,9 @@ Edit `skills/build-step/SKILL.md` so the foreground controller, during a section
 
 ### Completion log
 
-<!-- Executor fills in after section completes -->
-- Commits:
-- Tests added:
-- Deviations from plan:
+- Commits: `6fa51df` (implement), `960ed13` (remediate)
+- Tests added: `tests/ddr-build-step.sh` (15 grep/ordering assertions, exit 0)
+- Deviations from plan: DDR-append wired into build-step's existing Step 4 (renamed "Update the plan file and DDR"), keeping the controller-only actor and the routine-deviation-stays-in-completion-log boundary explicit. `Refs: DDR-N` rendered as a commit-body trailer (compatible with the existing `build: complete Section <N>` subject). Post-review remediation added the missing `Status: accepted` clause for newly appended entries (matching Section 1's required-field schema) and retargeted two decorative test assertions from pre-existing strings to Section-2-only strings. Same pre-existing `tests/blueprint-skill.sh` `Step 6.5` failure remains (unrelated).
 
 ---
 
