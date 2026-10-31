@@ -100,35 +100,43 @@ Repo-shipped lifecycle scripts under `.worktree/` own setup/teardown when presen
 
 ### herdr integration (optional)
 
-If you use [herdr](https://herdr.dev) as your terminal multiplexer, the `herdr-plugin/`
-directory wires herdr-created worktrees into this *same* `scripts/worktree-create`
-pipeline — one code path whether Claude or herdr makes the worktree.
+If you use [herdr](https://herdr.dev) as your terminal multiplexer,
+`herdr-plugin/herdr-new-worktree.sh` creates worktrees through this *same*
+`scripts/worktree-create` pipeline from a herdr keybinding.
 
 > **Not using herdr? Ignore this section.** Nothing in `herdr-plugin/` is referenced by
 > the Claude plugin (`.claude-plugin/`, `hooks/`, `skills/`), so installing blueprint never
-> loads or runs it. It activates only if *you* link it (`herdr plugin link`) or bind a key.
+> loads or runs it. It activates only if *you* bind a key to it.
 
-Two parts:
+`herdr-new-worktree.sh` is an fzf worktree launcher: pick an existing worktree to open
+(it nests as a sub-workspace via `herdr worktree open`) or type a name to create a new
+one the blueprint way (layout-aware path + full provisioning), choosing its base ref from
+a list. Needs `fzf` + `jq` on PATH. Bind it to a `type = "pane"` keybinding in
+`~/.config/herdr/config.toml`:
+```toml
+[[keys.command]]
+key = "prefix+ctrl+w"
+type = "pane"
+command = "/bin/bash /path/to/blueprint/herdr-plugin/herdr-new-worktree.sh"
+```
 
-- **`herdr-new-worktree.sh`** — an fzf worktree launcher: pick an existing worktree to
-  open (it nests as a sub-workspace via `herdr worktree open`) or type a name to create a
-  new one the blueprint way (layout-aware path + full provisioning), choosing its base ref
-  from a list. Needs `fzf` + `jq` on PATH. Bind it to a `type = "pane"` keybinding in
-  `~/.config/herdr/config.toml`:
-  ```toml
-  [[keys.command]]
-  key = "prefix+ctrl+w"
-  type = "pane"
-  command = "/bin/bash /path/to/blueprint/herdr-plugin/herdr-new-worktree.sh"
-  ```
-- **`herdr-plugin.toml`** (event hook) — fallback for worktrees made via herdr's own
-  native UI (which land at `~/.herdr/worktrees/<repo>/<branch>`): the `worktree.created`
-  event re-runs provisioning on them in place. Enable with `herdr plugin link <path>/herdr-plugin`.
+> **`type = "pane"` opens a floating overlay**, not a split, and it covers your current
+> pane until the script exits — including a slow `.worktree/post_create`. To run it in its
+> own tab instead, bind a `type = "shell"` wrapper:
+> ```bash
+> #!/bin/bash
+> set -euo pipefail
+> TAB=$(herdr tab create --cwd "$HERDR_ACTIVE_PANE_CWD" --label worktree --focus)
+> herdr pane run "$(jq -r '.result.root_pane.pane_id' <<<"$TAB")" \
+>   "/bin/bash /path/to/blueprint/herdr-plugin/herdr-new-worktree.sh; exit"
+> # --focus alone can leave the screen on the old tab while herdr is still handling
+> # the keypress; focusing again once the pane runs sticks.
+> herdr tab focus "$(jq -r '.result.tab.tab_id' <<<"$TAB")" >/dev/null
+> ```
+> The tab starts in the focused pane's directory and closes itself when the script exits.
 
-`scripts/worktree-create` accepts an optional 4th arg (an already-created worktree dir);
-when given it skips `git worktree add` and only provisions — that's how the herdr paths
-reuse it. `WT_PROVISION_ON_FAIL=keep` leaves a worktree in place on setup failure
-(herdr owns it) instead of the default `remove`.
+Worktrees made with herdr's own "New worktree" UI are not provisioned — use the
+keybinding instead.
 
 ### Cleanup
 
