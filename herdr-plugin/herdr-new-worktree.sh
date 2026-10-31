@@ -101,10 +101,10 @@ if [ -z "$BRANCH" ]; then
   # An existing worktree was chosen (not the sentinel, and it carries a path).
   if [ -n "$CHOSEN" ] && [ "$C_DISP" != "$NEW" ] && [ -n "$C_PATH" ]; then
     if [ -n "$C_WS" ]; then
-      echo "Already open — focusing workspace $C_WS…" >&2
+      echo "Already open — focusing workspace ${C_WS}…" >&2
       herdr workspace focus "$C_WS" >/dev/null
     else
-      echo "Opening worktree $C_PATH…" >&2
+      echo "Opening worktree ${C_PATH}…" >&2
       herdr worktree open --cwd "$SRC" --path "$C_PATH" --focus >/dev/null
       echo "Done. Opened $C_PATH" >&2
     fi
