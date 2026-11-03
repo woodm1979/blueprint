@@ -73,7 +73,6 @@ SCRIPT="$REPO_ROOT/scripts/worktree-remove-cli"
 
 # --- Test 5: No branch question when the repo's .worktree/remove already deleted it ---
 {
-  export BLUEPRINT_WORKTREE_TRUST_FILE="$(mktemp)"
   repo=$(mktemp -d)
   git -C "$repo" init -q
   git -C "$repo" config user.email "test@test.com"
@@ -92,7 +91,6 @@ EOF
   parent="$(dirname "$repo")"; base="$(basename "$repo")"
   mkdir -p "$parent/${base}-worktrees"
   git -C "$repo" worktree add -q -b "repo-owned" "$parent/${base}-worktrees/repo-owned" >/dev/null 2>&1
-  bash "$REPO_ROOT/scripts/worktree-trust" allow "$repo/.worktree/remove" >/dev/null 2>&1
 
   set +e
   output=$(echo y | (cd "$repo" && bash "$SCRIPT" "repo-owned") 2>&1)
@@ -105,7 +103,6 @@ EOF
     fail "branch the repo's remove deleted: no question, exit 0 (rc=$rc, output: $output)"
   fi
 
-  rm -f "$BLUEPRINT_WORKTREE_TRUST_FILE"
   cleanup "$repo"
 }
 
