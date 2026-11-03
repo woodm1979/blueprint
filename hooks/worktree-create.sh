@@ -32,5 +32,10 @@ if ! REPO_ROOT=$(git -C "$CWD" rev-parse --show-toplevel 2>/dev/null); then
     exit 1
   fi
 fi
+# A repo that registers its own WorktreeCreate hook owns creation. Claude Code runs
+# every WorktreeCreate hook and ignores one that exits 0 printing nothing.
+if jq -e '.hooks.WorktreeCreate' "$REPO_ROOT/.claude/settings.json" &>/dev/null; then
+  exit 0
+fi
 PLUGIN_ROOT="$(dirname "$0")/.."
 exec "$PLUGIN_ROOT/scripts/worktree-create" "$REPO_ROOT" "$NAME"
