@@ -613,4 +613,61 @@ EOF
   rm -rf "$src" "$container"
 }
 
+# --- Test 18: Hook steps aside when the repo registers its own WorktreeCreate hook ---
+# Claude Code runs every WorktreeCreate hook and uses whichever returns a path; one that
+# exits 0 printing nothing is ignored. The repo's hook (in its checked-in
+# .claude/settings.json) owns creation, so blueprint's must create nothing and print nothing.
+{
+  src=$(setup_repo)
+  mkdir -p "$src/.claude"
+  echo '{"hooks":{"WorktreeCreate":[{"hooks":[{"type":"command","command":"scripts/wt.sh"}]}]}}' \
+    > "$src/.claude/settings.json"
+  git -C "$src" add .claude/settings.json
+  git -C "$src" commit -q -m "repo WorktreeCreate hook"
+
+  # sigma's layout: the hook's cwd is the container, which resolves to the bare repo.
+  container=$(mktemp -d)
+  git clone -q --bare "$src" "$container/.bare"
+  echo "gitdir: ./.bare" > "$container/.git"
+  default_branch=$(git -C "$container/.bare" symbolic-ref --short HEAD)
+  git -C "$container/.bare" worktree add -q "$container/$default_branch" >/dev/null 2>&1
+
+  set +e
+  stdout_output=$(echo "{\"cwd\": \"$container\", \"name\": \"repo-owned\"}" | bash "$REPO_ROOT/hooks/worktree-create.sh" 2>/dev/null)
+  rc=$?
+  set -e
+
+  if [[ "$rc" -eq 0 && -z "$stdout_output" ]]; then
+    pass "repo WorktreeCreate hook: blueprint exits 0 and prints no path"
+  else
+    fail "repo WorktreeCreate hook: blueprint exits 0 and prints no path (rc=$rc, stdout: $stdout_output)"
+  fi
+  if [[ ! -e "$container/repo_owned" ]] && ! git -C "$container/.bare" show-ref --quiet refs/heads/repo-owned; then
+    pass "repo WorktreeCreate hook: blueprint creates no worktree and no branch"
+  else
+    fail "repo WorktreeCreate hook: blueprint creates no worktree and no branch"
+  fi
+
+  rm -rf "$src" "$container"
+}
+
+# --- Test 19: Other repo hooks don't make blueprint step aside ---
+{
+  repo=$(setup_repo)
+  mkdir -p "$repo/.claude"
+  echo '{"hooks":{"PostToolUse":[{"hooks":[{"type":"command","command":"true"}]}]}}' \
+    > "$repo/.claude/settings.json"
+
+  stdout_output=$(echo "{\"cwd\": \"$repo\", \"name\": \"still-blueprint\"}" | bash "$REPO_ROOT/hooks/worktree-create.sh" 2>/dev/null)
+
+  expected_wt="$(dirname "$repo")/$(basename "$repo")-worktrees/still-blueprint"
+  if [[ -d "$expected_wt" && "$stdout_output" == *"$expected_wt"* ]]; then
+    pass "repo settings without WorktreeCreate: blueprint still creates the worktree"
+  else
+    fail "repo settings without WorktreeCreate: blueprint still creates the worktree (stdout: $stdout_output)"
+  fi
+
+  cleanup "$repo"
+}
+
 summarize

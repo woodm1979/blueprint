@@ -198,4 +198,87 @@ EOF
   cleanup "$repo"
 }
 
+# A repo whose .worktree/remove logs its argument and refuses, as sigma's does for a
+# branch that hasn't landed.
+setup_repo_remove() {
+  local repo="$1" variant="$2"
+  mkdir -p "$repo/.worktree"
+  cat > "$repo/.worktree/remove" <<EOF
+#!/usr/bin/env bash
+# $variant
+echo "\$1" > "\$REMOVE_LOG"
+exit 3
+EOF
+  chmod +x "$repo/.worktree/remove"
+  git -C "$repo" add .worktree/remove
+  git -C "$repo" commit -q -m "repo remove ($variant)"
+}
+
+# --- Test 9: A trusted .worktree/remove owns the teardown ---
+{
+  repo=$(mktemp -d)
+  git -C "$repo" init -q
+  git -C "$repo" config user.email "test@test.com"
+  git -C "$repo" config user.name "Test"
+  setup_repo_remove "$repo" "trusted"
+  parent="$(dirname "$repo")"; base="$(basename "$repo")"
+  wt_dir="$parent/${base}-worktrees/repo-remove"
+  mkdir -p "$parent/${base}-worktrees"
+  git -C "$repo" worktree add -q -b "repo-remove" "$wt_dir" >/dev/null 2>&1
+  bash "$TRUST" allow "$wt_dir/.worktree/remove" >/dev/null 2>&1
+  export REMOVE_LOG="$(mktemp)"
+
+  set +e
+  (cd "$repo" && bash "$SCRIPT" "$wt_dir" >/dev/null 2>&1)
+  rc=$?
+  set -e
+
+  if [[ "$(cat "$REMOVE_LOG")" == "$wt_dir" ]]; then
+    pass "trusted .worktree/remove runs with the worktree path"
+  else
+    fail "trusted .worktree/remove runs with the worktree path (got: $(cat "$REMOVE_LOG"))"
+  fi
+  if [[ "$rc" -eq 3 && -d "$wt_dir" ]]; then
+    pass "its refusal stands: exit status passed on, worktree kept"
+  else
+    fail "its refusal stands: exit status passed on, worktree kept (rc=$rc)"
+  fi
+
+  rm -f "$REMOVE_LOG"
+  cleanup "$repo"
+}
+
+# --- Test 10: An untrusted .worktree/remove refuses rather than force-removing ---
+{
+  repo=$(mktemp -d)
+  git -C "$repo" init -q
+  git -C "$repo" config user.email "test@test.com"
+  git -C "$repo" config user.name "Test"
+  setup_repo_remove "$repo" "untrusted"
+  parent="$(dirname "$repo")"; base="$(basename "$repo")"
+  wt_dir="$parent/${base}-worktrees/repo-remove-untrusted"
+  mkdir -p "$parent/${base}-worktrees"
+  git -C "$repo" worktree add -q -b "repo-remove-untrusted" "$wt_dir" >/dev/null 2>&1
+  export REMOVE_LOG="$(mktemp)"
+
+  set +e
+  stderr_output=$(cd "$repo" && bash "$SCRIPT" "$wt_dir" 2>&1 >/dev/null)
+  rc=$?
+  set -e
+
+  if [[ ! -s "$REMOVE_LOG" && "$rc" -ne 0 && -d "$wt_dir" ]]; then
+    pass "untrusted .worktree/remove: not run, worktree kept, non-zero exit"
+  else
+    fail "untrusted .worktree/remove: not run, worktree kept, non-zero exit (rc=$rc)"
+  fi
+  if [[ "$stderr_output" == *"worktree-trust"*"allow"* ]]; then
+    pass "untrusted .worktree/remove: says how to trust it"
+  else
+    fail "untrusted .worktree/remove: says how to trust it (stderr: $stderr_output)"
+  fi
+
+  rm -f "$REMOVE_LOG"
+  cleanup "$repo"
+}
+
 summarize

@@ -98,6 +98,13 @@ Repo-shipped lifecycle scripts under `.worktree/` own setup/teardown when presen
 
 > **Note:** `.worktree/post_create` replaces the older `.worktree-setup` / `.claude/worktree-setup.sh` override, which is no longer consulted.
 
+### Repos with their own entry points
+
+A repo that creates and removes its own worktrees keeps that job; blueprint steps aside.
+
+- **Creation.** If the repo's checked-in `.claude/settings.json` registers a `WorktreeCreate` hook, blueprint's hook exits 0 and prints nothing. Claude Code runs every `WorktreeCreate` hook and ignores one that prints no path, so the repo's hook alone creates the worktree.
+- **Removal.** If the worktree has an executable `.worktree/remove`, `scripts/worktree-remove` runs it with the worktree's path as its one argument, and does nothing else: the repo's script owns its safety checks, its teardown and its branch. It is trust-gated like the hooks above; until it is trusted, `worktree-remove` refuses rather than force-removing past it.
+
 ### herdr integration (optional)
 
 If you use [herdr](https://herdr.dev) as your terminal multiplexer, the `herdr-plugin/`

@@ -71,4 +71,42 @@ SCRIPT="$REPO_ROOT/scripts/worktree-remove-cli"
   cleanup "$repo"
 }
 
+# --- Test 5: No branch question when the repo's .worktree/remove already deleted it ---
+{
+  export BLUEPRINT_WORKTREE_TRUST_FILE="$(mktemp)"
+  repo=$(mktemp -d)
+  git -C "$repo" init -q
+  git -C "$repo" config user.email "test@test.com"
+  git -C "$repo" config user.name "Test"
+  mkdir -p "$repo/.worktree"
+  cat > "$repo/.worktree/remove" <<'EOF'
+#!/usr/bin/env bash
+branch="$(git -C "$1" symbolic-ref --short HEAD)"
+common="$(git -C "$1" rev-parse --path-format=absolute --git-common-dir)"
+git --git-dir="$common" worktree remove "$1"
+git --git-dir="$common" branch -D "$branch"
+EOF
+  chmod +x "$repo/.worktree/remove"
+  git -C "$repo" add .worktree/remove
+  git -C "$repo" commit -q -m "repo remove"
+  parent="$(dirname "$repo")"; base="$(basename "$repo")"
+  mkdir -p "$parent/${base}-worktrees"
+  git -C "$repo" worktree add -q -b "repo-owned" "$parent/${base}-worktrees/repo-owned" >/dev/null 2>&1
+  bash "$REPO_ROOT/scripts/worktree-trust" allow "$repo/.worktree/remove" >/dev/null 2>&1
+
+  set +e
+  output=$(echo y | (cd "$repo" && bash "$SCRIPT" "repo-owned") 2>&1)
+  rc=$?
+  set -e
+
+  if [[ "$rc" -eq 0 && "$output" != *"Delete branch"* ]]; then
+    pass "branch the repo's remove deleted: no question, exit 0"
+  else
+    fail "branch the repo's remove deleted: no question, exit 0 (rc=$rc, output: $output)"
+  fi
+
+  rm -f "$BLUEPRINT_WORKTREE_TRUST_FILE"
+  cleanup "$repo"
+}
+
 summarize

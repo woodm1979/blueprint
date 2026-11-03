@@ -10,7 +10,7 @@ description: Remove a feature worktree after merge with uncommitted/unpushed saf
 Safely removes a feature worktree after its branch has been merged. Given a PLAN file path, this skill:
 
 1. Resolves the `Worktree:` field from the PLAN header.
-2. Runs three sanity checks in order — uncommitted changes, unpushed commits, unmerged branch.
+2. Runs three sanity checks in order — uncommitted changes, unpushed commits, unmerged branch — unless the worktree ships its own `.worktree/remove`, which then decides.
 3. On confirmation, runs `"$CLAUDE_PLUGIN_ROOT/scripts/worktree-remove" "$WORKTREE_DIR"` (which runs any trusted `.worktree/pre_delete` teardown, unlocks, removes, and prunes).
 
 ## Process
@@ -27,6 +27,8 @@ Read the PLAN file. Extract the `> Worktree: <abs-path>` line from the blockquot
 - If the `Worktree:` path does not exist on disk: print "Worktree directory does not exist — nothing to remove." and exit cleanly (exit 0).
 
 Store the resolved path as `WORKTREE_DIR`.
+
+**Repo-owned removal.** If `[ -x "$WORKTREE_DIR/.worktree/remove" ]`, the repo decides when a worktree may go: skip Steps 3–6 and go straight to Step 7. The checks below would refuse a branch that was rebased then merged, whose commits never reach the default branch as they are. If the repo's script refuses, print its message and stop; never retry with `--force` or by hand.
 
 ### Step 3 — Determine default branch
 
