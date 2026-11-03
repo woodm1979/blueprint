@@ -17,7 +17,8 @@
 set -euo pipefail
 
 # herdr panes may carry a thin PATH; ensure git/jq/fzf/mise (post_create) resolve.
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+# Appended, not prepended: Homebrew must not shadow the mise toolchain the pane inherited.
+export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 
 # The shared creator lives next to this script (herdr-plugin/ sibling of scripts/).
 SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
