@@ -78,4 +78,21 @@ else
   fail "Sanity checks ordering wrong (check1=$line_check1, check2=$line_check2, check3=$line_check3)"
 fi
 
+# AC: A worktree that ships an executable .worktree/remove skips the skill's own checks,
+# which refuse a branch rebased then merged, and lets the repo's script decide.
+line_handoff=$(grep -n -- '-x "$WORKTREE_DIR/.worktree/remove"' "$SKILL" | head -1 | cut -d: -f1 || true)
+if [[ -n "$line_handoff" && -n "$line_check1" && "$line_handoff" -lt "$line_check1" ]]; then
+  pass "Skill checks for the repo's .worktree/remove before its own sanity checks"
+else
+  fail "Skill checks for the repo's .worktree/remove before its own sanity checks (handoff=$line_handoff, check1=$line_check1)"
+fi
+
+skill_matches 'skip.*Step 7|Step 7.*skip|straight to Step 7' \
+  && pass "Repo .worktree/remove: skill goes straight to Step 7" \
+  || fail "Repo .worktree/remove: skill goes straight to Step 7"
+
+skill_matches 'refus.*(stop|Stop)|never.*--force' \
+  && pass "Repo .worktree/remove refusal: skill stops rather than forcing" \
+  || fail "Repo .worktree/remove refusal: skill stops rather than forcing"
+
 summarize
