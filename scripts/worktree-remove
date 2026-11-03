@@ -11,16 +11,11 @@ if [[ ! -d "$WORKTREE_PATH" ]]; then
 fi
 
 # A repo that ships its own .worktree/remove owns the whole teardown: its safety
-# checks, its databases, its branch. Untrusted, refuse rather than force-remove
-# past those checks.
+# checks, its databases, its branch. Not trust-gated: running blueprint's removal
+# on the repo is the opt-in, as running the repo's own script by hand would be.
 REPO_REMOVE="$WORKTREE_PATH/.worktree/remove"
 if [[ -x "$REPO_REMOVE" ]]; then
-  if trust_check "$REPO_REMOVE"; then
-    exec "$REPO_REMOVE" "$WORKTREE_PATH"
-  fi
-  echo "Error: $REPO_REMOVE is untrusted — refusing to remove the worktree without it." >&2
-  trust_hint "$REPO_REMOVE"
-  exit 1
+  exec "$REPO_REMOVE" "$WORKTREE_PATH"
 fi
 
 BRANCH=$(git -C "$WORKTREE_PATH" symbolic-ref --short HEAD 2>/dev/null || echo "detached HEAD")

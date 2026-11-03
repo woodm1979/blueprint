@@ -77,12 +77,7 @@ run_trusted_hook() {
     return 0
   fi
   echo "Warning: $hook_file is untrusted — skipping $label." >&2
-  trust_hint "$hook_file"
-  return 1
-}
-
-# Tell the user how to trust an untrusted hook file.
-trust_hint() {
   echo "         Review it, then trust it with:" >&2
-  echo "           \"\$CLAUDE_PLUGIN_ROOT/scripts/worktree-trust\" allow \"$1\"" >&2
+  echo "           \"\$CLAUDE_PLUGIN_ROOT/scripts/worktree-trust\" allow \"$hook_file\"" >&2
+  return 1
 }

@@ -103,7 +103,7 @@ Repo-shipped lifecycle scripts under `.worktree/` own setup/teardown when presen
 A repo that creates and removes its own worktrees keeps that job; blueprint steps aside.
 
 - **Creation.** If the repo's checked-in `.claude/settings.json` registers a `WorktreeCreate` hook, blueprint's hook exits 0 and prints nothing. Claude Code runs every `WorktreeCreate` hook and ignores one that prints no path, so the repo's hook alone creates the worktree.
-- **Removal.** If the worktree has an executable `.worktree/remove`, `scripts/worktree-remove` runs it with the worktree's path as its one argument, and does nothing else: the repo's script owns its safety checks, its teardown and its branch. It is trust-gated like the hooks above; until it is trusted, `worktree-remove` refuses rather than force-removing past it.
+- **Removal.** If the worktree has an executable `.worktree/remove`, `scripts/worktree-remove` runs it with the worktree's path as its one argument, and does nothing else: the repo's script owns its safety checks, its teardown and its branch. It is not trust-gated: running blueprint's removal on the repo is the opt-in, as running the repo's own script by hand would be.
 
 ### herdr integration (optional)
 
