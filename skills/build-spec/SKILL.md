@@ -137,7 +137,7 @@ A slice passes phase C only when both reviewers approve.
 
 ### D. Remediate
 
-On `NEEDS FIXES` from either reviewer, send the slice back: a fresh implementer with the phase A prompt plus the merged numbered fix list (deduplicated). Then repeat phase B, then re-run phase C with the previous findings attached, for the reviewer(s) that asked for fixes.
+On `NEEDS FIXES` from either reviewer, send the slice back: a fresh implementer with the phase A prompt plus the merged numbered fix list (deduplicated). Then repeat phase B, then re-run phase C with both reviewers, attaching the previous findings.
 
 A fix for a defect in code the slice didn't write lands in its own commit. Collect these across the slice for the PR/MR description's "Found along the way" section.
 
@@ -183,9 +183,9 @@ Then run the test command yourself once more.
 
 ## Step 6: Finish
 
-1. Push the integration branch, and leave the PR/MR as a draft; the user marks it ready.
+1. Push the integration branch, and leave the PR/MR as a draft; the user marks it ready. Update the PR/MR description to list the defects collected in phase D under "Found along the way".
 2. Remove the integration worktree.
-3. Report: the integration branch, the PR/MR link, each ticket with its merge commit, any stopped slice with its open findings, and step 5's unfixed judgement calls and questions.
+3. Report: the integration branch, the PR/MR link, each ticket with its merge commit, the defects found along the way, any stopped slice with its open findings, and step 5's unfixed judgement calls and questions.
 
 ## Rationalizations
 
