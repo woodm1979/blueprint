@@ -155,6 +155,10 @@ Stop the slice if a re-review marks any finding STILL OPEN, or after three revie
 
 Leave its branch and worktree unmerged. Record the open findings on the ticket: a comment on a remote tracker, or a note in the report for a local one. Continue with frontier tickets that don't depend on it, and report it to the user at the end.
 
+### Binding decisions
+
+A **binding decision** is a recorded decision the repo has promoted to a standing pattern; where they live is the repo's call (`docs/agents/domain.md` says where to look). Before a slice's implementer starts, and when a reviewer or implementer reports a conflict, check whether the slice's change would reverse one. If so, stop the slice, don't work around it, and propose a ticket for the reversal to the user. Reversing a binding decision is its own ticket, never a side effect of another.
+
 ## Step 5: Review the whole branch
 
 When every ticket has merged, review the whole integration branch, `git diff <merge-base>..HEAD` where `<merge-base>` is the merge-base of the integration branch and the default branch. Run both reviews:
@@ -181,11 +185,17 @@ Then route the findings:
 
 Then run the test command yourself once more.
 
+### Promote decisions
+
+Then run the promotion pass. Decisions are descriptive by default: they stay in the spec issue and the PR/MR's Deliberate section. List the decisions made during this run (from tickets, reports and findings) that look made on purpose to set a pattern; leave out offhand choices. If there are none, say so and move on.
+
+For each listed decision, the agent asks the user whether to promote it to binding, giving the decision and why it looks pattern-setting. Write a promotion only after the user confirms it, in the place the repo keeps binding decisions (find it through `docs/agents/domain.md`; don't assume `docs/adr/`). If it's unclear where, ask. Unconfirmed or unanswered decisions stay descriptive.
+
 ## Step 6: Finish
 
 1. Push the integration branch, and leave the PR/MR as a draft; the user marks it ready. Update the PR/MR description to list the defects collected in phase D under "Found along the way".
 2. Remove the integration worktree.
-3. Report: the integration branch, the PR/MR link, each ticket with its merge commit, the defects found along the way, any stopped slice with its open findings, and step 5's unfixed judgement calls and questions.
+3. Report: the integration branch, the PR/MR link, each ticket with its merge commit, the defects found along the way, any stopped slice with its open findings, step 5's unfixed judgement calls and questions, and the decisions proposed for promotion with the user's answers.
 
 ## Rationalizations
 
