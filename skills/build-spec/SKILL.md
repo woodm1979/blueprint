@@ -119,9 +119,29 @@ Leave its branch and worktree unmerged. Record the open findings on the ticket: 
 
 ## Step 5: Review the whole branch
 
-When every ticket has merged, call the Skill tool with `mattpocock-skills:code-review`, using the merge-base of the integration branch and the default branch as the fixed point.
+When every ticket has merged, review the whole integration branch, `git diff <merge-base>..HEAD` where `<merge-base>` is the merge-base of the integration branch and the default branch. Run both reviews:
 
-If any findings are defects (bugs, spec misses, violations of a documented standard), send a single implementer subagent to fix only those. Judgement calls and open questions go into the report for the user, unfixed. Then run the test command yourself once more.
+1. **Zoom-out review.** If the repo has a `/fit-review` (a command or skill in the repo, or named in CLAUDE.md/AGENTS.md), call it over that range. Otherwise dispatch one fresh reviewer subagent (model `opus`) as the built-in zoom-out review:
+
+---ZOOM-OUT REVIEWER PROMPT START---
+You are doing the end-of-branch zoom-out review of spec <spec ref>. Worktree: <integration worktree>. Review exactly this range: `git diff <merge-base>..HEAD`. Context pointers only; you have no implementer reports.
+
+Slices each passed review alone; you look for what only shows across slices. Is it the change the spec needed, in the module and layer it belongs in, done the way neighbouring code does the same job? Look for fragmentation, duplicated helpers, inconsistent naming or patterns between slices, and code in the wrong place.
+
+For each finding, say whether it is in the branch's own code (lines this range added) or pre-existing code the range merely touches or sits beside. Report findings only; don't edit.
+
+End with exactly one of: `CLEAN`, or `FINDINGS` and a numbered list.
+---ZOOM-OUT REVIEWER PROMPT END---
+
+2. **Bug review.** Call the Skill tool with `mattpocock-skills:code-review` over the same range.
+
+Then route the findings:
+
+- **Fit problems and defects (bugs, spec misses, violations of a documented standard) in the branch's own code:** send a single implementer subagent (the phase A prompt, with the findings as the send-back text) to fix them, and only them.
+- **Pre-existing problems:** go through the found-defect rule: an obvious fix goes in its own commit and is named in the PR/MR's "Found along the way"; anything needing a decision goes in the report, unfixed.
+- **Judgement calls and open questions:** into the report for the user, unfixed.
+
+Then run the test command yourself once more.
 
 ## Step 6: Finish
 
