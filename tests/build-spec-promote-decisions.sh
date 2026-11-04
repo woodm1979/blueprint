@@ -31,7 +31,9 @@ has "$BINDING" 'reverse' \
 has "$BINDING" 'propose a ticket' \
   && pass "Reversal stops and proposes a ticket" || fail "Ticket proposal missing"
 
-# Step 6 report mentions the promotion proposals; Step 5 hands off to the promote section.
+# Step 5 hands off to the promote section.
 STEP5="$(awk '/^## Step 5:/{f=1;next} /^## /{f=0} f' "$SKILL")"
 has "$STEP5" 'Promote decisions' \
   && pass "Step 5 runs the promotion pass" || fail "Step 5 does not reference promotion pass"
+
+summarize
