@@ -15,3 +15,17 @@ Before pushing to GitHub, bump the version in both `.claude-plugin/plugin.json` 
 ## PR/MR body drafts
 
 When a feature has a DDR (`docs/ai-plans/<date>-<slug>-DDR.md`), lead the PR/MR body draft with its high-contention entries — whoever reviews it should see the non-obvious forks first, not bury them below routine summary. This is reviewer-agnostic: the note names no specific reviewer or team.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues on woodm1979/blueprint (`gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default triage labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: the glossary (`CONTEXT.md` for now) and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
