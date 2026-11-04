@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 You have been given a spec: an issue whose child tickets (from `/to-tickets`) say how to build it. Build the whole spec on one **integration branch**, with each ticket resolved the way the issue tracker closes work.
 
-This is Pocock's `implement-spec` with one change: **no slice merges until you have verified it yourself and a spec reviewer has approved it.** Errors caught per slice don't compound into later slices.
+This is Pocock's `implement-spec` with one change: **no slice merges until you have verified it yourself and a spec reviewer and a quality reviewer have approved it.** Errors caught per slice don't compound into later slices.
 
 The issue tracker is described in `docs/agents/issue-tracker.md`. If it's missing, tell the user to run `/setup-matt-pocock-skills` and stop.
 
@@ -67,7 +67,8 @@ Worktree: <absolute path>. Branch: <slice-branch>. Base SHA: <base>. Integration
 - Confirm `git merge-base HEAD <integration-branch>` is <base> before starting.
 - Call the Skill tool with `mattpocock-skills:tdd` to build the ticket test-first. Where it says to confirm something with the user, decide yourself and list the decision in your report; nobody is there to ask.
 - Build only this ticket. If the ticket is ambiguous about **what** to build, stop and report; don't guess.
-- When fixing review findings: check each one against the code first. If a finding is wrong or unclear, report it instead of fixing it. Fix only the listed items.
+- When fixing review findings, follow the `receiving-code-review` rules: check each one against the code first. If a finding is wrong, report it instead of fixing it; if it is unclear, ask about unclear findings (report them as a question) before fixing. Fix only the listed items.
+- A defect you find in code this slice didn't write (a bug, dead code, an incorrect comment) is fixed only if the fix is obvious, and then in its own commit, separate from the slice's feature commits; list it in your report under "Found along the way". Anything less obvious goes in the report as a concern.
 - Run builds and tests in the foreground to completion.
 - Commit your work on <slice-branch>. Don't merge anything into any other branch.
 
@@ -88,9 +89,9 @@ If check 1 or 3 fails, or the diff strays into another ticket, send the slice ba
 
 Phase B only proves the tests pass. Whether they can fail is phase C's job.
 
-### C. Spec review
+### C. Spec and quality review
 
-Dispatch a fresh spec reviewer subagent (model `opus`) every time, with context pointers only:
+Dispatch a fresh spec reviewer and a fresh quality reviewer (both model `opus`) every time, in a single message so they run in parallel, with context pointers only. Neither waits for the other. Spec reviewer first:
 
 ---SPEC REVIEWER PROMPT START---
 You are a spec reviewer for ticket <ticket ref> of spec <spec ref>. Read both through the issue tracker described in `<repo>/docs/agents/issue-tracker.md`.
@@ -109,9 +110,36 @@ End with exactly one of:
 - `NEEDS FIXES`, then a numbered list of the fixes.
 ---SPEC REVIEWER PROMPT END---
 
+Quality reviewer, dispatched alongside it:
+
+---QUALITY REVIEWER PROMPT START---
+You are a quality reviewer for ticket <ticket ref> of spec <spec ref>. A separate reviewer is checking spec fit in parallel; don't re-audit it. Read the ticket through the issue tracker described in `<repo>/docs/agents/issue-tracker.md` for context.
+
+Worktree: <absolute path>. Review exactly this range: `git diff <base>..<slice-branch>`. Read the actual code; you have no implementer report to trust.
+
+Tag every finding with a class and a confidence:
+
+- **BUG** (anywhere in the diff, and in code the diff touches or passes): correctness, security and concurrency defects; tests that can't fail; dead code; incorrect comments. Dead code and incorrect comments are bugs.
+- **TASTE** (idiom, naming, wording, sizing, convention): raise only on lines the slice wrote, i.e. added lines in the diff. Never raise taste on code or comments the slice only passed, however awkward.
+- **HIGH-CONFIDENCE** means you can point to the line and say what goes wrong. Anything you are unsure of is **LOW-CONFIDENCE**.
+
+Only high-confidence BUG findings and high-confidence TASTE findings on lines the slice wrote are blocking. Report low-confidence findings too, tagged LOW-CONFIDENCE; they do not block.
+
+For each defect in code the slice did not write, say so, so it can be fixed in its own commit.
+<Only on a re-review: "Findings from the previous review, now claimed fixed:" followed by that list. Mark each FIXED or STILL OPEN.>
+
+End with exactly one of:
+- `APPROVED` (low-confidence findings may be listed above it)
+- `NEEDS FIXES`, then a numbered list of the blocking fixes only.
+---QUALITY REVIEWER PROMPT END---
+
+A slice passes phase C only when both reviewers approve.
+
 ### D. Remediate
 
-On `NEEDS FIXES`, send the slice back: a fresh implementer with the phase A prompt plus the numbered fix list. Then repeat phase B, then phase C with the previous findings attached.
+On `NEEDS FIXES` from either reviewer, send the slice back: a fresh implementer with the phase A prompt plus the merged numbered fix list (deduplicated). Then repeat phase B, then re-run phase C with the previous findings attached, for the reviewer(s) that asked for fixes.
+
+A fix for a defect in code the slice didn't write lands in its own commit. Collect these across the slice for the PR/MR description's "Found along the way" section.
 
 Stop the slice if a re-review marks any finding STILL OPEN, or after three review rounds. New findings that a fix uncovered don't stop the slice on their own.
 
