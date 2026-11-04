@@ -23,7 +23,7 @@ STUB
 # claude stub: logs its args and cwd, then runs $CLAUDE_ACTION (test-defined effect).
 cat > "$SANDBOX/bin/claude" <<'STUB'
 #!/usr/bin/env bash
-echo "cwd=$PWD args=$*" >> "$SANDBOX/claude.log"
+echo "cwd=$PWD prompt=${!#} args=$*" >> "$SANDBOX/claude.log"
 eval "${CLAUDE_ACTION:-true}"
 STUB
 chmod +x "$SANDBOX/bin/gh" "$SANDBOX/bin/claude"
@@ -74,8 +74,8 @@ head -1 "$SANDBOX/claude.log" | grep -q '#30' \
   && pass "first iteration takes unblocked ticket #30" || fail "first iteration should take #30"
 sed -n 2p "$SANDBOX/claude.log" | grep -q '#31' \
   && pass "second iteration takes #31 once unblocked" || fail "second iteration should take #31"
-grep -q 'build-spec' "$SANDBOX/claude.log" \
-  && pass "claude is asked to run build-spec" || fail "claude not asked for build-spec"
+[ "$(grep -c 'prompt=/blueprint:build-spec ' "$SANDBOX/claude.log")" -eq 2 ] \
+  && pass "claude prompt starts with the /blueprint:build-spec slash command" || fail "claude not asked for build-spec"
 grep -qF "cwd=$SANDBOX/wt " "$SANDBOX/claude.log" \
   && pass "claude runs in the provisioned worktree on the host" || fail "claude not run in worktree"
 grep -q -- '--dangerously-skip-permissions' "$SANDBOX/claude.log" \

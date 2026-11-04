@@ -63,7 +63,7 @@ while true; do
     --print \
     --output-format stream-json \
     --verbose \
-    "invoke blueprint:build-spec for spec #$SPEC, building only ticket #$next" \
+    "/blueprint:build-spec spec #$SPEC, building only ticket #$next" \
     | jq -r --unbuffered 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text' \
     || true
 
