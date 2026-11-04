@@ -80,6 +80,8 @@ grep -qF "cwd=$SANDBOX/wt " "$SANDBOX/claude.log" \
   && pass "claude runs in the provisioned worktree on the host" || fail "claude not run in worktree"
 grep -q -- '--dangerously-skip-permissions' "$SANDBOX/claude.log" \
   && pass "claude runs unattended (skip-permissions)" || fail "missing --dangerously-skip-permissions"
+[ -s "$SANDBOX/gh.log" ] && ! grep -qv 'issues/24/sub_issues' "$SANDBOX/gh.log" \
+  && pass "every gh call targets issues/24/sub_issues" || fail "gh called for a spec other than 24"
 
 # --- Blocked tickets are not taken ---
 reset
