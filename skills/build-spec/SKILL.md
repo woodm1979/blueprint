@@ -28,6 +28,16 @@ Find the repo's test command (CLAUDE.md, AGENTS.md, README, CI config). If there
 
 Find how the repo creates worktrees. If its docs name a script for it, use that script for every worktree below; otherwise use `git worktree add` in a sibling directory of the repo.
 
+### Check the ticket set
+
+Before any worktree or implementer exists, check the tickets as a set. Read-only: edit no ticket, spec or file. Look for:
+
+- **Blocking cycle**: follow the blocking links; any loop (A blocks B blocks A, or longer) is a blocking cycle that can never become unblocked.
+- **Gap**: a spec user story that no ticket's acceptance criteria cover.
+- **Conflict**: two tickets that require incompatible things, or that both own the same change.
+
+If you find any, stop the run and report them: for a cycle, name the cycle (`#A -> #B -> #A`); for a gap, quote the uncovered user story; for a conflict, name both tickets and what clashes. Start no worktree or subagent. If the set is clean, proceed without prompting.
+
 ## Step 2: (optional) Explore
 
 If the tickets need codebase or external exploration, run one exploration subagent first. It saves markdown notes to a directory outside the repo; pass that path to every later subagent.
