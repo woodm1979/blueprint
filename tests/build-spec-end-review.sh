@@ -43,4 +43,13 @@ step5_contains 'single implementer' \
   && pass "One implementer fixes the fit problems" \
   || fail "Single-implementer fix missing"
 
+# Step 5's fixer: obvious pre-existing fixes made by the same implementer, and the phase A prompt is adapted
+step5_contains 'also makes the obvious pre-existing fixes, each in its own commit' \
+  && pass "Step 5 implementer makes obvious pre-existing fixes, each in its own commit" \
+  || fail "Step 5 must name who makes the obvious pre-existing fixes"
+
+step5_contains 'fix branch' \
+  && pass "Step 5 says how to fill the phase A prompt (fix branch off the integration tip)" \
+  || fail "Step 5 must say how to fill the phase A prompt"
+
 summarize

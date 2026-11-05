@@ -54,4 +54,26 @@ else
   fail "Step 6 report must list defects found along the way"
 fi
 
+# Intro describes the skill's real differences from implement-spec
+intro=$(awk '/^# \/build-spec/{f=1;next} /^## /{f=0} f' "$SKILL")
+if ! grep -qF 'with one change' <<<"$intro" && grep -qF 'ticket-set check' <<<"$intro" && grep -qF 'binding decisions' <<<"$intro"; then
+  pass "Intro describes the skill's differences from implement-spec"
+else
+  fail "Intro must not claim a single change from implement-spec"
+fi
+
+# Step 6 collects found defects from phase A, phase D and Step 5
+if grep -qF 'phase A' <<<"$s6" && grep -qF 'phase D' <<<"$s6" && grep -qF 'Step 5' <<<"$s6"; then
+  pass "Step 6 collects found defects from phases A and D and Step 5"
+else
+  fail "Step 6 must collect found defects from phase A, phase D and Step 5"
+fi
+
+# A binding-decision finding is not remediated: phase D stops the slice
+if grep -qF 'not sent back' <<<"$dsec" && grep -qF 'Binding decisions' <<<"$dsec"; then
+  pass "Phase D stops the slice on a binding-decision finding"
+else
+  fail "Phase D must stop the slice, not remediate, on a binding-decision finding"
+fi
+
 summarize
