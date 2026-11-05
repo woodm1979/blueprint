@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 You have been given a spec: an issue whose child tickets (from `/to-tickets`) say how to build it. Build the whole spec on one **integration branch**, with each ticket resolved the way the issue tracker closes work.
 
-This is Pocock's `implement-spec` with one change: **no slice merges until you have verified it yourself and a spec reviewer and a quality reviewer have approved it.** Errors caught per slice don't compound into later slices.
+This is Blueprint's variant of Pocock's `implement-spec`: it runs a ticket-set check first, honors binding decisions, and reviews the whole branch at the end. Its core rule: **no slice merges until you have verified it yourself and a spec reviewer and a quality reviewer have approved it.** Errors caught per slice don't compound into later slices.
 
 The issue tracker is described in `docs/agents/issue-tracker.md`. If it's missing, tell the user to run `/setup-matt-pocock-skills` and stop.
 
@@ -140,7 +140,7 @@ A slice passes phase C only when both reviewers approve.
 
 ### D. Remediate
 
-On `NEEDS FIXES` from either reviewer, send the slice back: a fresh implementer with the phase A prompt plus the merged numbered fix list (deduplicated). Then repeat phase B, then re-run phase C with both reviewers, attaching the previous findings.
+On `NEEDS FIXES` from either reviewer, send the slice back, except for a blocking binding-decision finding: that is not sent back for remediation; stop the slice per **Binding decisions**. For the rest, send the slice back: a fresh implementer with the phase A prompt plus the merged numbered fix list (deduplicated). Then repeat phase B, then re-run phase C with both reviewers, attaching the previous findings.
 
 A fix for a defect in code the slice didn't write lands in its own commit. Collect these across the slice for the PR/MR description's "Found along the way" section.
 
@@ -182,8 +182,8 @@ End with exactly one of: `CLEAN`, or `FINDINGS` and a numbered list.
 
 Then route the findings:
 
-- **Fit problems and defects (bugs, spec misses, violations of a documented standard) in the branch's own code:** send a single implementer subagent (the phase A prompt, with the findings as the send-back text) to fix them, and only them.
-- **Pre-existing problems:** go through the found-defect rule: an obvious fix goes in its own commit and is named in the PR/MR's "Found along the way"; anything needing a decision goes in the report, unfixed.
+- **Fit problems and defects (bugs, spec misses, violations of a documented standard) in the branch's own code:** send a single implementer subagent (the phase A prompt, with the findings as the send-back text) to fix them, and only them. Fill the prompt for an integration-branch fix: the spec is the ticket, a fix branch off the integration tip is the slice branch (that tip is the base SHA), and it is verified, reviewed and merged like a slice, in the integration worktree.
+- **Pre-existing problems:** go through the found-defect rule: the same implementer also makes the obvious pre-existing fixes, each in its own commit, named in the PR/MR's "Found along the way"; anything needing a decision goes in the report, unfixed.
 - **Judgement calls and open questions:** into the report for the user, unfixed.
 
 Then run the test command yourself once more.
@@ -196,7 +196,7 @@ For each listed decision, the agent asks the user whether to promote it to bindi
 
 ## Step 6: Finish
 
-1. Push the integration branch, and leave the PR/MR as a draft; the user marks it ready. Update the PR/MR description to list the defects collected in phase D under "Found along the way".
+1. Push the integration branch, and leave the PR/MR as a draft; the user marks it ready. Update the PR/MR description to list the defects found along the way (fixed in phase A, phase D and Step 5) under "Found along the way".
 2. Remove the integration worktree.
 3. Report: the integration branch, the PR/MR link, each ticket with its merge commit, the defects found along the way, any stopped slice with its open findings, step 5's unfixed judgement calls and questions, and the decisions proposed for promotion with the user's answers.
 

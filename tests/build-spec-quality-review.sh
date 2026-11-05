@@ -8,18 +8,23 @@ SKILL="$REPO_ROOT/skills/build-spec/SKILL.md"
 . "$REPO_ROOT/tests/helpers.sh"
 
 has() { grep -qF -e "$1" "$SKILL"; }
+# Sections: phase A implementer prompt, phase C dispatch paragraph, quality reviewer prompt.
+IMPL=$(awk '/IMPLEMENTER PROMPT START/{f=1;next} /IMPLEMENTER PROMPT END/{f=0} f' "$SKILL")
+PHASEC=$(awk '/^### C\./{f=1;next} /SPEC REVIEWER PROMPT START/{f=0} f' "$SKILL")
+QUAL=$(awk '/QUALITY REVIEWER PROMPT START/{f=1;next} /QUALITY REVIEWER PROMPT END/{f=0} f' "$SKILL")
+in_section() { grep -qF -e "$2" <<<"$1" && pass "$3" || fail "$3 (missing: $2)"; }
 check() { has "$1" && pass "$2" || fail "$2 (missing: $1)"; }
 
 check 'QUALITY REVIEWER PROMPT START' "A quality reviewer prompt exists"
-check 'in parallel' "Spec and quality reviewers run in parallel"
+in_section "$PHASEC" 'in parallel' "Spec and quality reviewers run in parallel"
 check 'high-confidence' "Blocking is limited to high-confidence findings"
 check 'LOW-CONFIDENCE' "Low-confidence findings are tagged"
 check 'do not block' "Low-confidence findings do not block"
-check 'dead code' "Dead code counts as a bug"
+in_section "$QUAL" 'dead code' "Dead code counts as a bug"
 check 'incorrect comments' "Incorrect comments count as bugs"
 check 'lines the slice wrote' "Taste is limited to lines the slice wrote"
 check 'Found along the way' "Found defects are named under 'Found along the way'"
-check 'own commit' "Found defects are fixed in their own commit"
+in_section "$IMPL" 'own commit' "Found defects are fixed in their own commit"
 check 'receiving-code-review' "Implementer follows receiving-code-review rules"
 check 'ask about unclear' "Unclear findings are asked about before fixing"
 
@@ -52,6 +57,28 @@ if grep -qF 'defects found along the way' <<<"$s6"; then
   pass "Step 6 report lists defects found along the way"
 else
   fail "Step 6 report must list defects found along the way"
+fi
+
+# Intro describes the skill's real differences from implement-spec
+intro=$(awk '/^# \/build-spec/{f=1;next} /^## /{f=0} f' "$SKILL")
+if ! grep -qF 'with one change' <<<"$intro" && grep -qF 'ticket-set check' <<<"$intro" && grep -qF 'binding decisions' <<<"$intro"; then
+  pass "Intro describes the skill's differences from implement-spec"
+else
+  fail "Intro must not claim a single change from implement-spec"
+fi
+
+# Step 6 collects found defects from phase A, phase D and Step 5
+if grep -qF 'phase A' <<<"$s6" && grep -qF 'phase D' <<<"$s6" && grep -qF 'Step 5' <<<"$s6"; then
+  pass "Step 6 collects found defects from phases A and D and Step 5"
+else
+  fail "Step 6 must collect found defects from phase A, phase D and Step 5"
+fi
+
+# A binding-decision finding is not remediated: phase D stops the slice
+if grep -qF 'not sent back' <<<"$dsec" && grep -qF 'Binding decisions' <<<"$dsec"; then
+  pass "Phase D stops the slice on a binding-decision finding"
+else
+  fail "Phase D must stop the slice, not remediate, on a binding-decision finding"
 fi
 
 summarize
