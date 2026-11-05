@@ -9,9 +9,7 @@ description: Execute all sections in a blueprint PLAN file by looping /build-ste
 
 Executor of the blueprint suite. Given a `-PLAN.md` file produced by `/blueprint`, this skill runs each `[ ] not started` section in order by invoking `blueprint:build-step` in the foreground. `/build-step` handles the full section lifecycle (implementer dispatch, both reviews, optional remediation) and returns a `SECTION_COMPLETE`, `ALL_SECTIONS_COMPLETE`, or `BLOCKED: <reason>` signal. The orchestrator reads the signal and continues to the next section.
 
-The implementer and reviewers inside `/build-step` each run as fresh-context subagents — output quality is unaffected by foreground orchestration. For very long PLANs where foreground context accumulation is a concern, use `scripts/afk-build.sh`, which calls `/build-step` as a fresh process per section.
-
-**AFK use:** For unattended overnight runs, see `scripts/afk-build.sh`. It calls `/build-step` in a fresh Docker sandbox process per section, detects completion by grepping the PLAN file, and announces results via `/usr/bin/say`.
+The implementer and reviewers inside `/build-step` each run as fresh-context subagents — output quality is unaffected by foreground orchestration.
 
 The entire workflow is resumable across sessions: the PLAN file IS the state.
 
@@ -192,4 +190,3 @@ Because the PLAN file IS the state:
 - PLAN file doesn't exist yet → run `/blueprint` first.
 - Only small, inline edits are needed (no sections) → just make them.
 - The plan uses a different format (not blueprint `-PLAN.md` with the `[ ] not started` / `[x] complete` state machine) → `/build` expects that specific format.
-- For AFK unattended runs → use `scripts/afk-build.sh` directly (calls `/build-step` per section in a fresh Docker sandbox process).
