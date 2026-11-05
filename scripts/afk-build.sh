@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # AFK (unattended) build runner: runs build-spec on the host, one frontier
-# ticket per iteration, until the spec has no open tickets.
+# ticket per iteration, until every ticket of the spec is done.
 #
 # Prerequisites:
 #   - `claude` and `gh` (authenticated) on PATH, and `jq`.
@@ -9,8 +9,11 @@
 # Usage:
 #   scripts/afk-build.sh SPEC_NUMBER WORKTREE_DIR
 #
-# The frontier is the spec's open sub-issues whose blockers are all closed.
-# An iteration that closes no ticket stops the run with a non-zero exit.
+# A ticket is done once it is closed, or once a local branch holds build-spec's
+# merge commit for it ("Merge #N: ..."). build-spec leaves merged tickets open
+# until the PR merges, so the closed state alone can't show progress.
+# The frontier is the spec's unfinished sub-issues whose blockers are all done.
+# An iteration that finishes no ticket stops the run with a non-zero exit.
 
 set -euo pipefail
 
@@ -30,33 +33,50 @@ cd "$WORK_DIR"
 
 # --- Helpers ---
 
-# Open sub-issues of the spec, as a JSON array.
-open_tickets() {
-  gh api --paginate "repos/{owner}/{repo}/issues/$SPEC/sub_issues" \
-    | jq -s 'add | map(select(.state == "open"))'
+# Ticket numbers merged into any local branch, one per line.
+merged_tickets() {
+  git log --all --format=%s | sed -nE 's/^Merge #([0-9]+):.*/\1/p'
+}
+
+# Numbers of the tickets in a JSON issue array (on stdin) that are not done.
+not_done() {
+  jq -r --argjson merged "$(merged_tickets | jq -Rs 'split("\n") | map(select(. != "") | tonumber)')" \
+    '.[] | select(.state == "open" and (.number | IN($merged[]) | not)) | .number'
+}
+
+# The spec's tickets that are not done, one number per line.
+remaining_tickets() {
+  gh api --paginate "repos/{owner}/{repo}/issues/$SPEC/sub_issues" | jq -s add | not_done
+}
+
+# Succeeds when every blocker of ticket $1 is done.
+unblocked() {
+  [ -z "$(gh api --paginate "repos/{owner}/{repo}/issues/$1/dependencies/blocked_by" | jq -s add | not_done)" ]
 }
 
 # --- Main loop ---
 
 while true; do
-  open=$(open_tickets)
-  before=$(jq 'length' <<<"$open")
+  remaining=$(remaining_tickets)
+  before=$(grep -c . <<<"$remaining" || true)
 
   if [ "$before" -eq 0 ]; then
     echo "Build complete."
     exit 0
   fi
 
-  next=$(jq -r '[.[] | select((.issue_dependencies_summary.blocked_by // 0) == 0)] | .[0].number // empty' <<<"$open")
+  next=""
+  for n in $remaining; do
+    if unblocked "$n"; then next="$n"; break; fi
+  done
   if [ -z "$next" ]; then
-    echo "Build blocked: $before open ticket(s), none unblocked." >&2
+    echo "Build blocked: $before unfinished ticket(s), none unblocked." >&2
     exit 1
   fi
 
   echo ""
-  echo "--- Iteration: $before open ticket(s); taking #$next ---"
+  echo "--- Iteration: $before unfinished ticket(s); taking #$next ---"
   echo ""
-
   # Streaming output is piped through jq in real time.
   claude \
     --dangerously-skip-permissions \
@@ -67,11 +87,11 @@ while true; do
     | jq -r --unbuffered 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text' \
     || true
 
-  after=$(open_tickets | jq 'length')
+  after=$(remaining_tickets | grep -c . || true)
 
   if [ "$after" -ge "$before" ]; then
     echo ""
-    echo "Build blocked: iteration closed no ticket. Check output above." >&2
+    echo "Build blocked: iteration finished no ticket (none closed or merged). Check output above." >&2
     exit 1
   fi
 done
