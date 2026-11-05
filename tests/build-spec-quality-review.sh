@@ -8,18 +8,23 @@ SKILL="$REPO_ROOT/skills/build-spec/SKILL.md"
 . "$REPO_ROOT/tests/helpers.sh"
 
 has() { grep -qF -e "$1" "$SKILL"; }
+# Sections: phase A implementer prompt, phase C dispatch paragraph, quality reviewer prompt.
+IMPL=$(awk '/IMPLEMENTER PROMPT START/{f=1;next} /IMPLEMENTER PROMPT END/{f=0} f' "$SKILL")
+PHASEC=$(awk '/^### C\./{f=1;next} /SPEC REVIEWER PROMPT START/{f=0} f' "$SKILL")
+QUAL=$(awk '/QUALITY REVIEWER PROMPT START/{f=1;next} /QUALITY REVIEWER PROMPT END/{f=0} f' "$SKILL")
+in_section() { grep -qF -e "$2" <<<"$1" && pass "$3" || fail "$3 (missing: $2)"; }
 check() { has "$1" && pass "$2" || fail "$2 (missing: $1)"; }
 
 check 'QUALITY REVIEWER PROMPT START' "A quality reviewer prompt exists"
-check 'in parallel' "Spec and quality reviewers run in parallel"
+in_section "$PHASEC" 'in parallel' "Spec and quality reviewers run in parallel"
 check 'high-confidence' "Blocking is limited to high-confidence findings"
 check 'LOW-CONFIDENCE' "Low-confidence findings are tagged"
 check 'do not block' "Low-confidence findings do not block"
-check 'dead code' "Dead code counts as a bug"
+in_section "$QUAL" 'dead code' "Dead code counts as a bug"
 check 'incorrect comments' "Incorrect comments count as bugs"
 check 'lines the slice wrote' "Taste is limited to lines the slice wrote"
 check 'Found along the way' "Found defects are named under 'Found along the way'"
-check 'own commit' "Found defects are fixed in their own commit"
+in_section "$IMPL" 'own commit' "Found defects are fixed in their own commit"
 check 'receiving-code-review' "Implementer follows receiving-code-review rules"
 check 'ask about unclear' "Unclear findings are asked about before fixing"
 
