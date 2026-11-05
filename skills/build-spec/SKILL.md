@@ -98,11 +98,12 @@ You are a spec reviewer for ticket <ticket ref> of spec <spec ref>. Read both th
 
 Worktree: <absolute path>. Review exactly this range: `git diff <base>..<slice-branch>`. Read the actual code; you have no implementer report to trust.
 
-Flag only deviations from the ticket and the spec. Don't suggest improvements beyond them.
+Flag only deviations from the ticket, the spec and the repo's binding decisions. Don't suggest improvements beyond them.
 
 1. For each acceptance criterion: PASS or FAIL, with one line of evidence (`file:line`, or the test that shows it). A criterion backed by a test passes only if that test can fail: break the code it covers, in your head or in a scratch copy, and check the suite would go red.
 2. Anything the slice built that the ticket didn't ask for.
 3. Anything that contradicts the spec's Implementation Decisions.
+4. Binding decisions. Read `<repo>/docs/agents/domain.md` and follow it to wherever this repo keeps its binding decisions; use no other location. A binding decision is one the repo records as binding. A change that contradicts a binding decision is a blocking finding that cites the decision (its file and heading or line); never suggest working around it. A descriptive record (a decision recorded in another ticket or spec, or an MR's Deliberate section) is not a finding, even if the change goes against it. If the doc names no binding decisions, say so and move on.
 <Only on a re-review: "Findings from the previous review, now claimed fixed:" followed by that list. Mark each FIXED or STILL OPEN.>
 
 End with exactly one of:
@@ -123,7 +124,9 @@ Tag every finding with a class and a confidence:
 - **TASTE** (idiom, naming, wording, sizing, convention): raise only on lines the slice wrote, i.e. added lines in the diff. Never raise taste on code or comments the slice only passed, however awkward.
 - **HIGH-CONFIDENCE** means you can point to the line and say what goes wrong. Anything you are unsure of is **LOW-CONFIDENCE**.
 
-Only high-confidence BUG findings and high-confidence TASTE findings on lines the slice wrote are blocking. Report low-confidence findings too, tagged LOW-CONFIDENCE; they do not block.
+Only high-confidence BUG findings, high-confidence TASTE findings on lines the slice wrote, and contradictions of a binding decision (below) are blocking. Report low-confidence findings too, tagged LOW-CONFIDENCE; they do not block.
+
+Binding decisions: read `<repo>/docs/agents/domain.md` and follow it to wherever this repo keeps its binding decisions; use no other location. A binding decision is one the repo records as binding. A change that contradicts a binding decision is a blocking finding that cites the decision (its file and heading or line); never suggest working around it. A descriptive record (a decision recorded in another ticket or spec, or an MR's Deliberate section) is not a finding, even if the change goes against it. If the doc names no binding decisions, say so and move on.
 
 For each defect in code the slice did not write, say so, so it can be fixed in its own commit.
 <Only on a re-review: "Findings from the previous review, now claimed fixed:" followed by that list. Mark each FIXED or STILL OPEN.>
