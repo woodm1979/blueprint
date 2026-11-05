@@ -16,6 +16,7 @@ for who in SPEC QUALITY; do
 
   # AC1: found through the domain doc, not a hard-coded path
   if grep -qF 'docs/agents/domain.md' <<<"$p" && grep -qF 'binding decisions' <<<"$p" \
+     && grep -qF 'use no other location' <<<"$p" \
      && ! grep -qF 'docs/adr' <<<"$p" && ! grep -qF 'CONTRIBUTING' <<<"$p"; then
     pass "$who reviewer finds binding decisions through docs/agents/domain.md, no hard-coded location"
   else
@@ -23,14 +24,16 @@ for who in SPEC QUALITY; do
   fi
 
   # AC2: contradiction is a blocking finding citing the decision
-  if grep -qF 'contradicts a binding decision' <<<"$p" && grep -qF 'blocking' <<<"$p" && grep -qF 'cite' <<<"$p"; then
+  if grep -qF 'contradicts a binding decision' <<<"$p" && grep -qF 'is a blocking finding that cites the decision' <<<"$p" \
+     && { [[ $who == SPEC ]] || grep -qF 'contradictions of a binding decision (below) are blocking' <<<"$p"; }; then
     pass "$who reviewer raises a blocking finding citing a contradicted binding decision"
   else
     fail "$who reviewer must raise a blocking finding citing a contradicted binding decision"
   fi
 
   # AC3: descriptive records do not block
-  if grep -qF 'descriptive' <<<"$p" && grep -qF 'Deliberate' <<<"$p" && grep -qF 'not a finding' <<<"$p"; then
+  if grep -qF 'is not a finding, even if the change goes against it' <<<"$p" \
+     && grep -qF 'a decision recorded in another ticket or spec, or an MR' <<<"$p"; then
     pass "$who reviewer does not raise descriptive records (ticket, MR Deliberate)"
   else
     fail "$who reviewer must say descriptive records are not a finding"
