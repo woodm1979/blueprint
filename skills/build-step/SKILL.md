@@ -17,7 +17,7 @@ description: Execute one PLAN section via subagent chain. Outputs SECTION_COMPLE
 
 There is no nested section-controller subagent. `/build-step`'s own foreground is the section controller. The longest-lived child dispatch is a single implementer.
 
-This is the interface consumed by `/build`'s orchestrator and by `scripts/afk-build.sh`.
+This is the interface consumed by `/build`'s orchestrator.
 
 ## Step 1 — Locate and read the PLAN file
 

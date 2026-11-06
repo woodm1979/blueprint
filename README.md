@@ -56,7 +56,7 @@ The final worktree path is printed as the **last stdout line** (all progress goe
 
 1. `/blueprint` writes `> Worktree: <abs-path>` into the PLAN header, commits it, then calls `EnterWorktree` to create the worktree.
 2. `/build` reads the `Worktree:` field and enters the worktree before executing any sections. All commits land on the feature branch.
-3. `afk-build.sh` also reads the field and passes the worktree directory to docker as the project root.
+3. `afk-build.sh SPEC WORKTREE` runs `build-spec` on the host in a worktree the repo already provisioned, one frontier ticket per iteration (no docker).
 
 ### Concern 2 — File-bringing (`.worktreeinclude`)
 
