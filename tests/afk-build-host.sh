@@ -23,6 +23,7 @@ case "$*" in
     if [ -n "${GH_FAIL_BLOCKERS:-}" ]; then echo "HTTP 502" >&2; exit 1; fi
     n=$(grep -oE 'issues/[0-9]+/dependencies' <<<"$*" | grep -oE '[0-9]+')
     cat "$SANDBOX/blockers-$n.json" 2>/dev/null || echo '[]' ;;
+  "repo view"*) echo main ;;
   *) echo "unexpected gh call: $*" >&2; exit 1 ;;
 esac
 STUB
@@ -46,12 +47,14 @@ export PATH="$SANDBOX/bin:$PATH"
 ticket() { # number state
   printf '{"number":%s,"state":"%s"}' "$1" "$2"
 }
-# Fresh worktree: a git repo with one commit, so `git log --all` has history to search.
+# Fresh worktree: a git repo whose default branch `main` has one commit, checked
+# out on a feature branch, so `git log --all` has history to search.
 reset() {
   rm -f "$SANDBOX"/*.log "$SANDBOX"/blockers-*.json
   if [ -d "$SANDBOX/wt" ]; then rm -r "$SANDBOX/wt"; fi
-  git init -q "$SANDBOX/wt"
+  git init -q -b main "$SANDBOX/wt"
   git -C "$SANDBOX/wt" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  git -C "$SANDBOX/wt" checkout -q -b feature
   unset ANTHROPIC_API_KEY CLAUDE_ACTION || true
 }
 merge_commit() { # number: record build-spec's merge commit for ticket N
@@ -112,6 +115,21 @@ export CLAUDE_ACTION="$PROMPT_TICKET; merge_commit \$n"
 run || true
 [ "$(wc -l < "$SANDBOX/claude.log")" -eq 1 ] && grep -q '#3$' "$SANDBOX/claude.log" \
   && pass "already-merged #30 is skipped; only #3 runs" || fail "expected one run, for #3: $(cat "$SANDBOX/claude.log" 2>/dev/null)"
+
+# --- A reopened ticket whose merge already landed on main is built again ---
+reset
+echo "[$(ticket 30 open)]" > "$SANDBOX/tickets.json"
+git -C "$SANDBOX/wt" checkout -q main
+# A distinct title: an identical empty commit on the same parent in the same
+# second would share its SHA with the rebuild's merge commit.
+git -C "$SANDBOX/wt" -c user.name=t -c user.email=t@t commit -q --allow-empty -m "Merge #30: first build"
+git -C "$SANDBOX/wt" checkout -q feature
+export CLAUDE_ACTION="$PROMPT_TICKET; merge_commit \$n"
+if run && [ "$(wc -l < "$SANDBOX/claude.log")" -eq 1 ] && grep -q '#30$' "$SANDBOX/claude.log"; then
+  pass "merge commit already on main does not count: reopened #30 is rebuilt"
+else
+  fail "reopened #30 should be rebuilt: $(cat "$SANDBOX/out.txt")"
+fi
 
 # --- A failed blocker lookup stops the run instead of treating the ticket as unblocked ---
 reset

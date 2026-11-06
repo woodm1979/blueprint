@@ -11,7 +11,9 @@
 #
 # A ticket is done once it is closed, or once a local branch holds build-spec's
 # merge commit for it ("Merge #N: ..."). build-spec leaves merged tickets open
-# until the PR merges, so the closed state alone can't show progress.
+# until the PR merges, so the closed state alone can't show progress. Merge
+# commits already on the default branch don't count: a ticket reopened after its
+# PR landed is built again.
 # The frontier is the spec's unfinished sub-issues whose blockers are all done.
 # An iteration that finishes no ticket stops the run with a non-zero exit.
 
@@ -30,12 +32,22 @@ if [ ! -d "$WORK_DIR" ]; then
   exit 1
 fi
 cd "$WORK_DIR"
+DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
 
 # --- Helpers ---
 
-# Ticket numbers merged into any local branch, one per line.
+# The default branch's local and remote refs, whichever exist.
+default_refs() {
+  local ref
+  for ref in "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"; do
+    if git rev-parse -q --verify "$ref^{commit}" >/dev/null; then echo "$ref"; fi
+  done
+}
+
+# Ticket numbers merged into a local branch but not yet the default branch, one per line.
 merged_tickets() {
-  git log --all --format=%s | sed -nE 's/^Merge #([0-9]+):.*/\1/p'
+  # shellcheck disable=SC2046 # one ref name per word
+  git log --all --format=%s --not $(default_refs) | sed -nE 's/^Merge #([0-9]+):.*/\1/p'
 }
 
 # Numbers of the tickets in a JSON issue array (on stdin) that are not done.
