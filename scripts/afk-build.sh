@@ -49,9 +49,15 @@ remaining_tickets() {
   gh api --paginate "repos/{owner}/{repo}/issues/$SPEC/sub_issues" | jq -s add | not_done
 }
 
-# Succeeds when every blocker of ticket $1 is done.
+# Succeeds when every blocker of ticket $1 is done. Called from `if`, where
+# set -e is off, so a failed lookup exits explicitly rather than reading as "no blockers".
 unblocked() {
-  [ -z "$(gh api --paginate "repos/{owner}/{repo}/issues/$1/dependencies/blocked_by" | jq -s add | not_done)" ]
+  local blockers
+  if ! blockers=$(gh api --paginate "repos/{owner}/{repo}/issues/$1/dependencies/blocked_by" | jq -s 'add // []'); then
+    echo "Error: could not read blockers of #$1." >&2
+    exit 1
+  fi
+  [ -z "$(not_done <<<"$blockers")" ]
 }
 
 # --- Main loop ---

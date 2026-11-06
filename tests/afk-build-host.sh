@@ -20,6 +20,7 @@ echo "$*" >> "$SANDBOX/gh.log"
 case "$*" in
   *"/sub_issues"*) cat "$SANDBOX/tickets.json" ;;
   *"/dependencies/blocked_by"*)
+    if [ -n "${GH_FAIL_BLOCKERS:-}" ]; then echo "HTTP 502" >&2; exit 1; fi
     n=$(grep -oE 'issues/[0-9]+/dependencies' <<<"$*" | grep -oE '[0-9]+')
     cat "$SANDBOX/blockers-$n.json" 2>/dev/null || echo '[]' ;;
   *) echo "unexpected gh call: $*" >&2; exit 1 ;;
@@ -111,6 +112,12 @@ export CLAUDE_ACTION="$PROMPT_TICKET; merge_commit \$n"
 run || true
 [ "$(wc -l < "$SANDBOX/claude.log")" -eq 1 ] && grep -q '#3$' "$SANDBOX/claude.log" \
   && pass "already-merged #30 is skipped; only #3 runs" || fail "expected one run, for #3: $(cat "$SANDBOX/claude.log" 2>/dev/null)"
+
+# --- A failed blocker lookup stops the run instead of treating the ticket as unblocked ---
+reset
+echo "[$(ticket 30 open),$(ticket 31 open)]" > "$SANDBOX/tickets.json"
+if GH_FAIL_BLOCKERS=1 run; then fail "gh failure on blocker lookup should exit non-zero"; else pass "gh failure on blocker lookup exits non-zero"; fi
+[ ! -e "$SANDBOX/claude.log" ] && pass "no ticket started when blockers are unknown" || fail "ticket started despite failed blocker lookup"
 
 # --- Blocked tickets are not taken ---
 reset
